@@ -1,7 +1,10 @@
 use chrono::{Datelike, Duration, NaiveDate, NaiveDateTime, NaiveTime, Utc};
 use chrono_utilities::naive::DateTransitions;
-use clap::{ArgEnum, Parser};
+use clap::Parser;
 use serde::{ser::SerializeStruct, Deserialize, Serialize};
+use types::{AdhanError, AsrCalculationMethod, Kind, LatitudeMethod, PrayerCalculationMethod};
+
+pub mod types;
 
 pub static DATA: &str = "https://www.salahtimes.com/uk/bath/csv";
 
@@ -20,25 +23,6 @@ pub struct PrayerArguments {
     /// Asr time method
     #[clap(short, long, arg_enum, default_value = "shafi")]
     asr_method: AsrCalculationMethod,
-}
-
-#[derive(Debug, Clone, Copy, ArgEnum)]
-pub enum LatitudeMethod {
-    OneSeventh = 3,
-    AngleBased,
-}
-
-#[derive(Debug, Clone, Copy, ArgEnum)]
-pub enum PrayerCalculationMethod {
-    MWL = 1,
-    UIS = 3,
-    ISNA = 5,
-}
-
-#[derive(Debug, Clone, Copy, ArgEnum)]
-pub enum AsrCalculationMethod {
-    Shafi = 1,
-    Hanafi,
 }
 
 struct PrayerQueryBuilder {
@@ -67,15 +51,6 @@ impl PrayerQueryBuilder {
             end_date
         )
     }
-}
-
-#[derive(Debug, Serialize, Clone, Copy, PartialEq, Eq)]
-enum Kind {
-    Fajr,
-    Dhuhr,
-    Asr,
-    Maghrib,
-    Isha,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -174,7 +149,7 @@ struct CSVPrayer {
 }
 
 impl CSVPrayer {
-    fn build(self) -> Result<Day, Box<dyn std::error::Error>> {
+    fn build(self) -> Result<Day, AdhanError> {
         let year = Utc::now().year();
 
         let fajr = format!("{} {}, {}", self.day, year, self.fajr);
@@ -183,11 +158,16 @@ impl CSVPrayer {
         let maghrib = format!("{} {}, {}", self.day, year, self.maghrib);
         let isha = format!("{} {}, {}", self.day, year, self.isha);
 
-        let fajr = NaiveDateTime::parse_from_str(&fajr, "%a %d %b %Y, %k:%M")?;
-        let dhuhr = NaiveDateTime::parse_from_str(&dhuhr, "%a %d %b %Y, %k:%M")?;
-        let asr = NaiveDateTime::parse_from_str(&asr, "%a %d %b %Y, %k:%M")?;
-        let maghrib = NaiveDateTime::parse_from_str(&maghrib, "%a %d %b %Y, %k:%M")?;
-        let isha = NaiveDateTime::parse_from_str(&isha, "%a %d %b %Y, %k:%M")?;
+        let fajr = NaiveDateTime::parse_from_str(&fajr, "%a %d %b %Y, %k:%M")
+            .map_err(|_| AdhanError::Parse)?;
+        let dhuhr = NaiveDateTime::parse_from_str(&dhuhr, "%a %d %b %Y, %k:%M")
+            .map_err(|_| AdhanError::Parse)?;
+        let asr = NaiveDateTime::parse_from_str(&asr, "%a %d %b %Y, %k:%M")
+            .map_err(|_| AdhanError::Parse)?;
+        let maghrib = NaiveDateTime::parse_from_str(&maghrib, "%a %d %b %Y, %k:%M")
+            .map_err(|_| AdhanError::Parse)?;
+        let isha = NaiveDateTime::parse_from_str(&isha, "%a %d %b %Y, %k:%M")
+            .map_err(|_| AdhanError::Parse)?;
 
         let rhs = Duration::hours(12);
         Ok(Day {
@@ -203,7 +183,7 @@ impl CSVPrayer {
     }
 }
 
-pub async fn from_csv(prayer_arguments: PrayerArguments) -> Result<Vec<Day>, Box<dyn std::error::Error>> {
+pub async fn from_csv(prayer_arguments: PrayerArguments) -> Result<Vec<Day>, AdhanError> {
     let data = download_csv_file(prayer_arguments).await?;
 
     let mut csv_reader = csv::Reader::from_reader(data.as_bytes());
@@ -211,7 +191,8 @@ pub async fn from_csv(prayer_arguments: PrayerArguments) -> Result<Vec<Day>, Box
     let mut days = vec![];
     for record in csv_reader.records() {
         let day = record
-            .and_then(|x| x.deserialize::<'_, CSVPrayer>(None))?
+            .and_then(|x| x.deserialize::<'_, CSVPrayer>(None))
+            .map_err(|_| AdhanError::Deserialize)?
             .build()?;
         days.push(day);
     }
@@ -219,7 +200,14 @@ pub async fn from_csv(prayer_arguments: PrayerArguments) -> Result<Vec<Day>, Box
     Ok(days)
 }
 
-async fn download_csv_file(prayer_arguments: PrayerArguments) -> Result<String, Box<dyn std::error::Error>> {
+pub fn export_to_yaml(month: Vec<Day>) -> Result<(), AdhanError> {
+    let mut current_month =
+        std::fs::File::create("current_month.yaml").map_err(AdhanError::FileCreation)?;
+
+    serde_yaml::to_writer(&mut current_month, &month).map_err(AdhanError::SerializedFileWrite)
+}
+
+async fn download_csv_file(prayer_arguments: PrayerArguments) -> Result<String, AdhanError> {
     let response = reqwest::get(
         PrayerQueryBuilder {
             high_latitude_method: prayer_arguments.latitude_method,
@@ -229,7 +217,8 @@ async fn download_csv_file(prayer_arguments: PrayerArguments) -> Result<String, 
         }
         .build(),
     )
-    .await?;
-    let content = response.text().await?;
+    .await
+    .map_err(|_| AdhanError::Request)?;
+    let content = response.text().await.map_err(|_| AdhanError::Download)?;
     Ok(content)
 }
