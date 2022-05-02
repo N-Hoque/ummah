@@ -1,15 +1,22 @@
-use adhan_rs::from_csv;
+use adhan_rs::{from_csv, PrayerArguments};
+use clap::StructOpt;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let month = from_csv().await?;
+    let args = PrayerArguments::parse();
 
-    let today = chrono::Utc::now();
+    let month = from_csv(args).await?;
 
-    for day in month {
-        if day.get_date() == today.date().naive_local() {
-            println!("{}", day);
-        }
+    let mut this_month = std::fs::File::create("this_month.yaml").expect("Creating new file");
+
+    serde_yaml::to_writer(&mut this_month, &month).expect("Writing to file");
+
+    let today = chrono::Local::now().date().naive_utc();
+
+    let today = month.into_iter().find(|day| day.get_date() == today);
+
+    if let Some(day) = today {
+        println!("{}", day);
     }
 
     Ok(())

@@ -1,7 +1,73 @@
 use chrono::{Datelike, Duration, NaiveDate, NaiveDateTime, NaiveTime, Utc};
+use chrono_utilities::naive::DateTransitions;
+use clap::{ArgEnum, Parser};
 use serde::{ser::SerializeStruct, Deserialize, Serialize};
 
 pub static DATA: &str = "https://www.salahtimes.com/uk/bath/csv";
+
+/// Gets prayer times from www.salahtimes.com
+#[derive(Parser, Debug)]
+#[clap(author, version, about, long_about = None)]
+pub struct PrayerArguments {
+    /// Latitude method
+    #[clap(short, long, arg_enum, default_value = "one-seventh")]
+    latitude_method: LatitudeMethod,
+
+    /// Source of Prayer calculation
+    #[clap(short, long, arg_enum, default_value = "mwl")]
+    prayer_method: PrayerCalculationMethod,
+
+    /// Asr time method
+    #[clap(short, long, arg_enum, default_value = "shafi")]
+    asr_method: AsrCalculationMethod,
+}
+
+#[derive(Debug, Clone, Copy, ArgEnum)]
+pub enum LatitudeMethod {
+    OneSeventh = 3,
+    AngleBased,
+}
+
+#[derive(Debug, Clone, Copy, ArgEnum)]
+pub enum PrayerCalculationMethod {
+    MWL = 1,
+    UIS = 3,
+    ISNA = 5,
+}
+
+#[derive(Debug, Clone, Copy, ArgEnum)]
+pub enum AsrCalculationMethod {
+    Shafi = 1,
+    Hanafi,
+}
+
+struct PrayerQueryBuilder {
+    high_latitude_method: LatitudeMethod,
+    prayer_calculation_method: PrayerCalculationMethod,
+    asr_calculation_method: AsrCalculationMethod,
+    current_month: NaiveDate,
+}
+
+impl PrayerQueryBuilder {
+    fn build(self) -> String {
+        let current_year = self.current_month.year();
+        let current_month = self.current_month.month();
+        let end_day = self.current_month.last_day_of_month();
+
+        let start_date = format!("{}-{}-01", current_year, current_month);
+        let end_date = format!("{}-{}-{}", current_year, current_month, end_day);
+
+        format!(
+            "{}?highlatitudemethod={}&prayercalculationmethod={}&asarcalculationmethod={}&start={}&end={}",
+            DATA,
+            self.high_latitude_method as u8,
+            self.prayer_calculation_method as u8,
+            self.asr_calculation_method as u8,
+            start_date,
+            end_date
+        )
+    }
+}
 
 #[derive(Debug, Serialize, Clone, Copy, PartialEq, Eq)]
 enum Kind {
@@ -50,17 +116,6 @@ impl std::fmt::Display for Prayer {
 impl Prayer {
     fn new(kind: Kind, time: NaiveTime) -> Self {
         Self { kind, time }
-    }
-
-    fn apply_asr_correction(self) -> Self {
-        if let Kind::Asr = self.kind {
-            Prayer::new(
-                Kind::Asr,
-                self.time.overflowing_sub_signed(Duration::hours(1)).0,
-            )
-        } else {
-            self
-        }
     }
 }
 
@@ -140,8 +195,7 @@ impl CSVPrayer {
             prayers: [
                 Prayer::new(Kind::Fajr, fajr.time()),
                 Prayer::new(Kind::Dhuhr, dhuhr.time().overflowing_add_signed(rhs).0),
-                Prayer::new(Kind::Asr, asr.time().overflowing_add_signed(rhs).0)
-                    .apply_asr_correction(),
+                Prayer::new(Kind::Asr, asr.time().overflowing_add_signed(rhs).0),
                 Prayer::new(Kind::Maghrib, maghrib.time().overflowing_add_signed(rhs).0),
                 Prayer::new(Kind::Isha, isha.time().overflowing_add_signed(rhs).0),
             ],
@@ -149,8 +203,8 @@ impl CSVPrayer {
     }
 }
 
-pub async fn from_csv() -> Result<Vec<Day>, Box<dyn std::error::Error>> {
-    let data = download_csv_file().await?;
+pub async fn from_csv(prayer_arguments: PrayerArguments) -> Result<Vec<Day>, Box<dyn std::error::Error>> {
+    let data = download_csv_file(prayer_arguments).await?;
 
     let mut csv_reader = csv::Reader::from_reader(data.as_bytes());
 
@@ -162,15 +216,20 @@ pub async fn from_csv() -> Result<Vec<Day>, Box<dyn std::error::Error>> {
         days.push(day);
     }
 
-    let mut this_month = std::fs::File::create("this_month.yaml").expect("Creating new file");
-
-    serde_yaml::to_writer(&mut this_month, &days).expect("Writing to file");
-
     Ok(days)
 }
 
-async fn download_csv_file() -> Result<String, Box<dyn std::error::Error>> {
-    let response = reqwest::get(DATA).await?;
+async fn download_csv_file(prayer_arguments: PrayerArguments) -> Result<String, Box<dyn std::error::Error>> {
+    let response = reqwest::get(
+        PrayerQueryBuilder {
+            high_latitude_method: prayer_arguments.latitude_method,
+            prayer_calculation_method: prayer_arguments.prayer_method,
+            asr_calculation_method: prayer_arguments.asr_method,
+            current_month: chrono::Local::now().naive_utc().date(),
+        }
+        .build(),
+    )
+    .await?;
     let content = response.text().await?;
     Ok(content)
 }
