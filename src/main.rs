@@ -1,8 +1,8 @@
-use adhan_rs::{get_prayer_times, types::AdhanError, PrayerArguments};
+use adhan_rs::{get_prayer_times, types::AdhanResult, PrayerArguments};
 use clap::StructOpt;
 
 #[tokio::main]
-async fn main() -> Result<(), AdhanError> {
+async fn main() -> AdhanResult<()> {
     let args = PrayerArguments::parse();
 
     let month = get_prayer_times(args).await?;

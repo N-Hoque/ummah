@@ -2,6 +2,8 @@ use clap::ArgEnum;
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
+pub type AdhanResult<T> = Result<T, AdhanError>;
+
 #[derive(Debug, Error)]
 pub enum AdhanError {
     #[error("Failed to request times")]

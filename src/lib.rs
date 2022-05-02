@@ -4,7 +4,9 @@ use chrono::{Datelike, Duration, NaiveDate, NaiveDateTime, NaiveTime, Utc};
 use chrono_utilities::naive::DateTransitions;
 use clap::Parser;
 use serde::{Deserialize, Serialize};
-use types::{AdhanError, AsrCalculationMethod, Kind, LatitudeMethod, PrayerCalculationMethod};
+use types::{
+    AdhanError, AdhanResult, AsrCalculationMethod, Kind, LatitudeMethod, PrayerCalculationMethod,
+};
 
 pub static LINK: &str = "https://www.salahtimes.com/uk/bath/csv";
 
@@ -132,7 +134,7 @@ struct CSVPrayer {
 }
 
 impl CSVPrayer {
-    fn build(self) -> Result<Day, AdhanError> {
+    fn build(self) -> AdhanResult<Day> {
         let year = Utc::now().year();
 
         let fajr = format!("{} {}, {}", self.day, year, self.fajr);
@@ -166,7 +168,7 @@ impl CSVPrayer {
     }
 }
 
-pub async fn get_prayer_times(prayer_arguments: PrayerArguments) -> Result<Vec<Day>, AdhanError> {
+pub async fn get_prayer_times(prayer_arguments: PrayerArguments) -> AdhanResult<Vec<Day>> {
     if let Ok(month) = from_yaml(&prayer_arguments) {
         Ok(month)
     } else {
@@ -174,7 +176,7 @@ pub async fn get_prayer_times(prayer_arguments: PrayerArguments) -> Result<Vec<D
     }
 }
 
-fn from_yaml(prayer_arguments: &PrayerArguments) -> Result<Vec<Day>, AdhanError> {
+fn from_yaml(prayer_arguments: &PrayerArguments) -> AdhanResult<Vec<Day>> {
     let settings = open_file(".current_settings.yaml")?;
 
     let settings: PrayerArguments = serde_yaml::from_reader(settings).map_err(AdhanError::Serde)?;
@@ -187,7 +189,7 @@ fn from_yaml(prayer_arguments: &PrayerArguments) -> Result<Vec<Day>, AdhanError>
     }
 }
 
-async fn from_csv(prayer_arguments: PrayerArguments) -> Result<Vec<Day>, AdhanError> {
+async fn from_csv(prayer_arguments: PrayerArguments) -> AdhanResult<Vec<Day>> {
     let data = download_csv_file(&prayer_arguments).await?;
 
     let mut csv_reader = csv::Reader::from_reader(data.as_bytes());
@@ -207,16 +209,16 @@ async fn from_csv(prayer_arguments: PrayerArguments) -> Result<Vec<Day>, AdhanEr
     Ok(days)
 }
 
-fn open_file(path: &str) -> Result<std::fs::File, AdhanError> {
+fn open_file(path: &str) -> AdhanResult<std::fs::File> {
     std::fs::File::open(path).map_err(AdhanError::File)
 }
 
-fn write_file<T: Serialize>(path: &str, data: &T) -> Result<(), AdhanError> {
+fn write_file<T: Serialize>(path: &str, data: &T) -> AdhanResult<()> {
     let mut file = std::fs::File::create(path).map_err(AdhanError::File)?;
     serde_yaml::to_writer(&mut file, data).map_err(AdhanError::Serde)
 }
 
-async fn download_csv_file(prayer_arguments: &PrayerArguments) -> Result<String, AdhanError> {
+async fn download_csv_file(prayer_arguments: &PrayerArguments) -> AdhanResult<String> {
     let response = reqwest::get(
         PrayerQueryBuilder {
             high_latitude_method: prayer_arguments.latitude_method,
