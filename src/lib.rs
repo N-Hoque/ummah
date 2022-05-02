@@ -1,15 +1,15 @@
+pub mod types;
+
 use chrono::{Datelike, Duration, NaiveDate, NaiveDateTime, NaiveTime, Utc};
 use chrono_utilities::naive::DateTransitions;
 use clap::Parser;
-use serde::{ser::SerializeStruct, Deserialize, Serialize};
+use serde::{Deserialize, Serialize};
 use types::{AdhanError, AsrCalculationMethod, Kind, LatitudeMethod, PrayerCalculationMethod};
 
-pub mod types;
-
-pub static DATA: &str = "https://www.salahtimes.com/uk/bath/csv";
+pub static LINK: &str = "https://www.salahtimes.com/uk/bath/csv";
 
 /// Gets prayer times from www.salahtimes.com
-#[derive(Parser, Debug)]
+#[derive(Parser, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[clap(author, version, about, long_about = None)]
 pub struct PrayerArguments {
     /// Latitude method
@@ -43,7 +43,7 @@ impl PrayerQueryBuilder {
 
         format!(
             "{}?highlatitudemethod={}&prayercalculationmethod={}&asarcalculationmethod={}&start={}&end={}",
-            DATA,
+            LINK,
             self.high_latitude_method as u8,
             self.prayer_calculation_method as u8,
             self.asr_calculation_method as u8,
@@ -53,27 +53,10 @@ impl PrayerQueryBuilder {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Serialize, Deserialize, Clone, Copy, PartialEq, Eq)]
 pub struct Prayer {
     kind: Kind,
     time: NaiveTime,
-}
-
-impl Serialize for Prayer {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: serde::Serializer,
-    {
-        let mut state = serializer.serialize_struct("Prayer", 2)?;
-        match self.kind {
-            Kind::Fajr => state.serialize_field("Fajr", &self.time)?,
-            Kind::Dhuhr => state.serialize_field("Dhuhr", &self.time)?,
-            Kind::Asr => state.serialize_field("Asr", &self.time)?,
-            Kind::Maghrib => state.serialize_field("Maghrib", &self.time)?,
-            Kind::Isha => state.serialize_field("Isha", &self.time)?,
-        }
-        state.end()
-    }
 }
 
 impl std::fmt::Display for Prayer {
@@ -94,7 +77,7 @@ impl Prayer {
     }
 }
 
-#[derive(Debug, Serialize, Clone, PartialEq, Eq)]
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]
 pub struct Day {
     date: NaiveDate,
     prayers: [Prayer; 5],
@@ -183,8 +166,29 @@ impl CSVPrayer {
     }
 }
 
-pub async fn from_csv(prayer_arguments: PrayerArguments) -> Result<Vec<Day>, AdhanError> {
-    let data = download_csv_file(prayer_arguments).await?;
+pub async fn get_prayer_times(prayer_arguments: PrayerArguments) -> Result<Vec<Day>, AdhanError> {
+    if let Ok(month) = from_yaml(&prayer_arguments) {
+        Ok(month)
+    } else {
+        from_csv(prayer_arguments).await
+    }
+}
+
+fn from_yaml(prayer_arguments: &PrayerArguments) -> Result<Vec<Day>, AdhanError> {
+    let settings = open_file(".current_settings.yaml")?;
+
+    let settings: PrayerArguments = serde_yaml::from_reader(settings).map_err(AdhanError::Serde)?;
+    if settings == *prayer_arguments {
+        let file = open_file("current_month.yaml")?;
+        serde_yaml::from_reader(file).map_err(AdhanError::Serde)
+    } else {
+        println!("Settings have changed. Reloading...");
+        Err(AdhanError::Request)
+    }
+}
+
+async fn from_csv(prayer_arguments: PrayerArguments) -> Result<Vec<Day>, AdhanError> {
+    let data = download_csv_file(&prayer_arguments).await?;
 
     let mut csv_reader = csv::Reader::from_reader(data.as_bytes());
 
@@ -192,22 +196,27 @@ pub async fn from_csv(prayer_arguments: PrayerArguments) -> Result<Vec<Day>, Adh
     for record in csv_reader.records() {
         let day = record
             .and_then(|x| x.deserialize::<'_, CSVPrayer>(None))
-            .map_err(|_| AdhanError::Deserialize)?
+            .map_err(AdhanError::CSV)?
             .build()?;
         days.push(day);
     }
 
+    write_file("current_month.yaml", &days)?;
+    write_file(".current_settings.yaml", &prayer_arguments)?;
+
     Ok(days)
 }
 
-pub fn export_to_yaml(month: Vec<Day>) -> Result<(), AdhanError> {
-    let mut current_month =
-        std::fs::File::create("current_month.yaml").map_err(AdhanError::FileCreation)?;
-
-    serde_yaml::to_writer(&mut current_month, &month).map_err(AdhanError::SerializedFileWrite)
+fn open_file(path: &str) -> Result<std::fs::File, AdhanError> {
+    std::fs::File::open(path).map_err(AdhanError::File)
 }
 
-async fn download_csv_file(prayer_arguments: PrayerArguments) -> Result<String, AdhanError> {
+fn write_file<T: Serialize>(path: &str, data: &T) -> Result<(), AdhanError> {
+    let mut file = std::fs::File::create(path).map_err(AdhanError::File)?;
+    serde_yaml::to_writer(&mut file, data).map_err(AdhanError::Serde)
+}
+
+async fn download_csv_file(prayer_arguments: &PrayerArguments) -> Result<String, AdhanError> {
     let response = reqwest::get(
         PrayerQueryBuilder {
             high_latitude_method: prayer_arguments.latitude_method,

@@ -1,11 +1,11 @@
-use adhan_rs::{from_csv, PrayerArguments, export_to_yaml, types::AdhanError};
+use adhan_rs::{get_prayer_times, types::AdhanError, PrayerArguments};
 use clap::StructOpt;
 
 #[tokio::main]
 async fn main() -> Result<(), AdhanError> {
     let args = PrayerArguments::parse();
 
-    let month = from_csv(args).await?;
+    let month = get_prayer_times(args).await?;
 
     let today = chrono::Local::now().date().naive_utc();
 
@@ -14,8 +14,6 @@ async fn main() -> Result<(), AdhanError> {
     if let Some(day) = today {
         println!("{}", day);
     }
-
-    export_to_yaml(month)?;
 
     Ok(())
 }
