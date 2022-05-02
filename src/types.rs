@@ -56,3 +56,15 @@ pub(crate) enum Kind {
     Maghrib,
     Isha,
 }
+
+impl std::fmt::Display for Kind {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Kind::Fajr => write!(f, "Fajr"),
+            Kind::Dhuhr => write!(f, "Dhuhr"),
+            Kind::Asr => write!(f, "Asr"),
+            Kind::Maghrib => write!(f, "Maghrib"),
+            Kind::Isha => write!(f, "Isha"),
+        }
+    }
+}

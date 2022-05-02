@@ -27,6 +27,102 @@ pub struct PrayerArguments {
     asr_method: AsrCalculationMethod,
 }
 
+#[derive(Debug, Serialize, Deserialize, Clone, Copy, PartialEq, Eq)]
+pub struct Prayer {
+    kind: Kind,
+    time: NaiveTime,
+}
+
+impl std::fmt::Display for Prayer {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self.kind {
+            Kind::Fajr => write!(f, "Fajr: {}", self.time),
+            Kind::Dhuhr => write!(f, "Dhuhr: {}", self.time),
+            Kind::Asr => write!(f, "Asr: {}", self.time),
+            Kind::Maghrib => write!(f, "Maghrib: {}", self.time),
+            Kind::Isha => write!(f, "Isha: {}", self.time),
+        }
+    }
+}
+
+impl Prayer {
+    fn new(kind: Kind, time: NaiveTime) -> Self {
+        Self { kind, time }
+    }
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]
+pub struct Day {
+    date: NaiveDate,
+    prayers: [Prayer; 5],
+}
+
+impl std::fmt::Display for Day {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let mut output = self.date.format("%A, %d %B %Y").to_string();
+
+        output = format!("\n{:^62}\n", output);
+
+        output += &format!("|{:=<62}|\n|", "");
+
+        for (idx, prayer) in self.prayers.iter().enumerate() {
+            output += &format!("{:^10}", prayer.kind.to_string());
+            if idx < 4 {
+                output += " | ";
+            }
+        }
+
+        output += "|\n|";
+
+        for (idx, prayer) in self.prayers.iter().enumerate() {
+            output += &format!("{:^10}", prayer.time.to_string());
+            if idx < 4 {
+                output += " | ";
+            }
+        }
+
+        output += &format!("|\n|{:=<62}|\n", "");
+
+        write!(f, "{output}")
+    }
+}
+
+impl PartialOrd for Day {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        self.date.partial_cmp(&other.date)
+    }
+}
+
+impl Ord for Day {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        self.date.cmp(&other.date)
+    }
+}
+
+impl Day {
+    pub fn get_date(&self) -> NaiveDate {
+        self.date
+    }
+
+    pub fn get_prayers(&self) -> [Prayer; 5] {
+        self.prayers
+    }
+}
+
+pub async fn get_prayer_times(prayer_arguments: PrayerArguments) -> AdhanResult<Vec<Day>> {
+    if let Ok(month) = from_yaml(&prayer_arguments) {
+        Ok(month)
+    } else {
+        from_csv(prayer_arguments).await
+    }
+}
+
+pub fn try_get_today(month: &[Day]) -> Option<&Day> {
+    let today = chrono::Local::now().date().naive_utc();
+    let today = month.iter().find(|day| day.get_date() == today);
+    today
+}
+
 struct PrayerQueryBuilder {
     high_latitude_method: LatitudeMethod,
     prayer_calculation_method: PrayerCalculationMethod,
@@ -52,73 +148,6 @@ impl PrayerQueryBuilder {
             start_date,
             end_date
         )
-    }
-}
-
-#[derive(Debug, Serialize, Deserialize, Clone, Copy, PartialEq, Eq)]
-pub struct Prayer {
-    kind: Kind,
-    time: NaiveTime,
-}
-
-impl std::fmt::Display for Prayer {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self.kind {
-            Kind::Fajr => write!(f, "Fajr:    {}", self.time),
-            Kind::Dhuhr => write!(f, "Dhuhr    {}", self.time),
-            Kind::Asr => write!(f, "Asr:     {}", self.time),
-            Kind::Maghrib => write!(f, "Maghrib: {}", self.time),
-            Kind::Isha => write!(f, "Isha:    {}", self.time),
-        }
-    }
-}
-
-impl Prayer {
-    fn new(kind: Kind, time: NaiveTime) -> Self {
-        Self { kind, time }
-    }
-}
-
-#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]
-pub struct Day {
-    date: NaiveDate,
-    prayers: [Prayer; 5],
-}
-
-impl Day {
-    pub fn get_date(&self) -> NaiveDate {
-        self.date
-    }
-
-    pub fn get_prayers(&self) -> [Prayer; 5] {
-        self.prayers
-    }
-}
-
-impl std::fmt::Display for Day {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let mut output = self.date.format("%A, %d %B %Y").to_string() + "\n\t";
-
-        for (idx, prayer) in self.prayers.into_iter().enumerate() {
-            output += &prayer.to_string();
-            if idx < 4 {
-                output += "\n\t";
-            }
-        }
-
-        write!(f, "{output}")
-    }
-}
-
-impl PartialOrd for Day {
-    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
-        self.date.partial_cmp(&other.date)
-    }
-}
-
-impl Ord for Day {
-    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
-        self.date.cmp(&other.date)
     }
 }
 
@@ -165,14 +194,6 @@ impl CSVPrayer {
                 Prayer::new(Kind::Isha, isha.time().overflowing_add_signed(rhs).0),
             ],
         })
-    }
-}
-
-pub async fn get_prayer_times(prayer_arguments: PrayerArguments) -> AdhanResult<Vec<Day>> {
-    if let Ok(month) = from_yaml(&prayer_arguments) {
-        Ok(month)
-    } else {
-        from_csv(prayer_arguments).await
     }
 }
 
@@ -232,10 +253,4 @@ async fn download_csv_file(prayer_arguments: &PrayerArguments) -> AdhanResult<St
     .map_err(|_| AdhanError::Request)?;
     let content = response.text().await.map_err(|_| AdhanError::Download)?;
     Ok(content)
-}
-
-pub fn try_get_today(month: &[Day]) -> Option<&Day> {
-    let today = chrono::Local::now().date().naive_utc();
-    let today = month.iter().find(|day| day.get_date() == today);
-    today
 }
