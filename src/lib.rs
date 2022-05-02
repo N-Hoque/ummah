@@ -233,3 +233,9 @@ async fn download_csv_file(prayer_arguments: &PrayerArguments) -> AdhanResult<St
     let content = response.text().await.map_err(|_| AdhanError::Download)?;
     Ok(content)
 }
+
+pub fn try_get_today(month: &[Day]) -> Option<&Day> {
+    let today = chrono::Local::now().date().naive_utc();
+    let today = month.iter().find(|day| day.get_date() == today);
+    today
+}
