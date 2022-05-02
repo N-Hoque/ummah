@@ -5,12 +5,16 @@ use clap::StructOpt;
 async fn main() -> AdhanResult<()> {
     let args = PrayerArguments::parse();
 
-    let month = get_prayer_times(args).await?;
+    let month = get_prayer_times(&args.settings()).await?;
 
-    let today = try_get_today(&month);
-
-    if let Some(day) = today {
-        println!("{}", day);
+    if args.is_today_only() {
+        if let Some(day) = try_get_today(&month) {
+            println!("{}", day);
+        }
+    } else {
+        for day in month {
+            println!("{}", day);
+        }
     }
 
     Ok(())
