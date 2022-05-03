@@ -15,10 +15,9 @@ use types::{AdhanError, AdhanResult};
 use std::fs::File;
 
 pub async fn get_prayer_times(prayer_settings: &PrayerSettings) -> AdhanResult<Vec<Day>> {
-    if let (true, Ok(month)) = (check_settings(prayer_settings), from_yaml()) {
-        Ok(month)
-    } else {
-        from_csv(prayer_settings).await
+    match (check_settings(prayer_settings), from_yaml()) {
+        (true, Some(month)) => Ok(month),
+        _ => from_csv(prayer_settings).await,
     }
 }
 
@@ -29,18 +28,20 @@ pub fn try_get_today(month: &[Day]) -> Option<&Day> {
 }
 
 fn check_settings(prayer_settings: &PrayerSettings) -> bool {
-    open_file(".current_settings.yaml").map_or_else(
-        |_x| false,
-        |x| {
-            serde_yaml::from_reader::<_, PrayerSettings>(x)
-                .map_or_else(|_x| false, |settings| settings == *prayer_settings)
+    match open_file(".current_settings.yaml") {
+        Err(_) => false,
+        Ok(file) => match serde_yaml::from_reader::<_, PrayerSettings>(file) {
+            Err(_) => false,
+            Ok(settings) => settings == *prayer_settings,
         },
-    )
+    }
 }
 
-fn from_yaml() -> AdhanResult<Vec<Day>> {
-    let file = open_file("current_month.yaml")?;
-    serde_yaml::from_reader(file).map_err(AdhanError::Serde)
+fn from_yaml() -> Option<Vec<Day>> {
+    match open_file("current_month.yaml") {
+        Err(_) => None,
+        Ok(file) => serde_yaml::from_reader(file).ok(),
+    }
 }
 
 async fn from_csv(prayer_settings: &PrayerSettings) -> AdhanResult<Vec<Day>> {
