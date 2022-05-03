@@ -1,15 +1,18 @@
+use crate::types::Kind;
+
+use chrono::NaiveTime;
 use serde::{Deserialize, Serialize};
 
-use crate::types::Kind;
+use std::fmt;
 
 #[derive(Debug, Serialize, Deserialize, Clone, Copy, PartialEq, Eq)]
 pub struct Prayer {
     pub(crate) kind: Kind,
-    pub(crate) time: chrono::NaiveTime,
+    pub(crate) time: NaiveTime,
 }
 
-impl std::fmt::Display for Prayer {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl fmt::Display for Prayer {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self.kind {
             Kind::Fajr => write!(f, "Fajr: {}", self.time),
             Kind::Dhuhr => write!(f, "Dhuhr: {}", self.time),
@@ -21,7 +24,7 @@ impl std::fmt::Display for Prayer {
 }
 
 impl Prayer {
-    pub(crate) fn new(kind: Kind, time: chrono::NaiveTime) -> Self {
+    pub(crate) fn new(kind: Kind, time: NaiveTime) -> Self {
         Self { kind, time }
     }
 }

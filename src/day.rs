@@ -1,15 +1,17 @@
-use serde::{Deserialize, Serialize};
-
 use crate::prayer::Prayer;
 
+use chrono::NaiveDate;
+use serde::{Deserialize, Serialize};
+
+use std::{cmp::Ordering, fmt};
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]
 pub struct Day {
-    pub(crate) date: chrono::NaiveDate,
+    pub(crate) date: NaiveDate,
     pub(crate) prayers: [Prayer; 5],
 }
 
-impl std::fmt::Display for Day {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl fmt::Display for Day {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let mut output = self.date.format("%A, %d %B %Y").to_string();
 
         output = format!("\n{:^62}\n", output);
@@ -39,19 +41,19 @@ impl std::fmt::Display for Day {
 }
 
 impl PartialOrd for Day {
-    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
         self.date.partial_cmp(&other.date)
     }
 }
 
 impl Ord for Day {
-    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+    fn cmp(&self, other: &Self) -> Ordering {
         self.date.cmp(&other.date)
     }
 }
 
 impl Day {
-    pub fn get_date(&self) -> chrono::NaiveDate {
+    pub fn get_date(&self) -> NaiveDate {
         self.date
     }
 

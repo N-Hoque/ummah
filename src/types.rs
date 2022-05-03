@@ -2,27 +2,23 @@ use clap::ArgEnum;
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
+use std::{fmt, io, error};
+
 pub type AdhanResult<T> = Result<T, AdhanError>;
 
 #[derive(Debug, Error)]
 pub enum AdhanError {
     #[error("Failed to request times")]
-    Request,
-
-    #[error("Failed to download times")]
-    Download,
+    Request(#[from] Box<dyn error::Error>),
 
     #[error("Failed to read CSV file")]
     CSV(#[from] csv::Error),
 
-    #[error("Failed to deserialize times")]
-    Deserialize,
-
     #[error("Failed to parse time")]
-    Parse,
+    DateTime(#[from] chrono::ParseError),
 
     #[error("Failed to process file")]
-    File(#[from] std::io::Error),
+    File(#[from] io::Error),
 
     #[error("Failed to (de)serialize")]
     Serde(#[from] serde_yaml::Error),
@@ -57,8 +53,8 @@ pub(crate) enum Kind {
     Isha,
 }
 
-impl std::fmt::Display for Kind {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl fmt::Display for Kind {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Kind::Fajr => write!(f, "Fajr"),
             Kind::Dhuhr => write!(f, "Dhuhr"),

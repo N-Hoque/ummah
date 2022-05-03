@@ -3,7 +3,7 @@ pub(crate) mod prayer;
 pub(crate) mod request_parser;
 pub mod types;
 
-use chrono::Datelike;
+use chrono::{Datelike, Local};
 use clap::Parser;
 use day::Day;
 use request_parser::{CSVPrayer, PrayerQueryBuilder};
@@ -11,6 +11,8 @@ use serde::{Deserialize, Serialize};
 use types::{
     AdhanError, AdhanResult, AsrCalculationMethod, LatitudeMethod, PrayerCalculationMethod,
 };
+
+use std::fs::File;
 
 /// Gets prayer times from www.salahtimes.com
 #[derive(Parser, Debug, PartialEq, Eq, Serialize, Deserialize)]
@@ -39,7 +41,7 @@ impl PrayerArguments {
             latitude_method: self.latitude_method,
             prayer_method: self.prayer_method,
             asr_method: self.asr_method,
-            current_month: chrono::Local::now().month(),
+            current_month: Local::now().month(),
         }
     }
 
@@ -56,31 +58,45 @@ pub struct PrayerSettings {
     current_month: u32,
 }
 
+impl PrayerSettings {
+    fn query(&self) -> String {
+        PrayerQueryBuilder {
+            high_latitude_method: self.latitude_method,
+            prayer_calculation_method: self.prayer_method,
+            asr_calculation_method: self.asr_method,
+            current_month: Local::now().naive_utc().date(),
+        }
+        .build()
+    }
+}
+
 pub async fn get_prayer_times(prayer_settings: &PrayerSettings) -> AdhanResult<Vec<Day>> {
-    if let Ok(month) = from_yaml(prayer_settings) {
-        Ok(month)
+    if check_settings(prayer_settings) {
+        from_yaml()
     } else {
         from_csv(prayer_settings).await
     }
 }
 
 pub fn try_get_today(month: &[Day]) -> Option<&Day> {
-    let today = chrono::Local::now().date().naive_utc();
+    let today = Local::now().date().naive_utc();
     let today = month.iter().find(|day| day.get_date() == today);
     today
 }
 
-fn from_yaml(prayer_arguments: &PrayerSettings) -> AdhanResult<Vec<Day>> {
-    let settings = open_file(".current_settings.yaml")?;
+fn check_settings(prayer_settings: &PrayerSettings) -> bool {
+    open_file(".current_settings.yaml").map_or_else(
+        |_x| false,
+        |x| {
+            serde_yaml::from_reader::<_, PrayerSettings>(x)
+                .map_or_else(|_x| false, |settings| settings == *prayer_settings)
+        },
+    )
+}
 
-    let settings: PrayerSettings = serde_yaml::from_reader(settings).map_err(AdhanError::Serde)?;
-    if settings == *prayer_arguments {
-        let file = open_file("current_month.yaml")?;
-        serde_yaml::from_reader(file).map_err(AdhanError::Serde)
-    } else {
-        println!("Settings have changed. Reloading...");
-        Err(AdhanError::Request)
-    }
+fn from_yaml() -> AdhanResult<Vec<Day>> {
+    let file = open_file("current_month.yaml")?;
+    serde_yaml::from_reader(file).map_err(AdhanError::Serde)
 }
 
 async fn from_csv(prayer_settings: &PrayerSettings) -> AdhanResult<Vec<Day>> {
@@ -97,33 +113,30 @@ async fn from_csv(prayer_settings: &PrayerSettings) -> AdhanResult<Vec<Day>> {
         days.push(day);
     }
 
-    write_file("current_month.yaml", &days)?;
-    write_file(".current_settings.yaml", &prayer_settings)?;
+    cache_times(&days, prayer_settings)?;
 
     Ok(days)
 }
 
-fn open_file(path: &str) -> AdhanResult<std::fs::File> {
-    std::fs::File::open(path).map_err(AdhanError::File)
+fn cache_times(days: &Vec<Day>, prayer_settings: &PrayerSettings) -> AdhanResult<()> {
+    write_file("current_month.yaml", days)?;
+    write_file(".current_settings.yaml", &prayer_settings)?;
+    Ok(())
+}
+
+fn open_file(path: &str) -> AdhanResult<File> {
+    File::open(path).map_err(AdhanError::File)
 }
 
 fn write_file<T: Serialize>(path: &str, data: &T) -> AdhanResult<()> {
-    let mut file = std::fs::File::create(path).map_err(AdhanError::File)?;
+    let mut file = File::create(path).map_err(AdhanError::File)?;
     serde_yaml::to_writer(&mut file, data).map_err(AdhanError::Serde)
 }
 
 async fn download_csv_file(prayer_settings: &PrayerSettings) -> AdhanResult<String> {
-    let response = reqwest::get(
-        PrayerQueryBuilder {
-            high_latitude_method: prayer_settings.latitude_method,
-            prayer_calculation_method: prayer_settings.prayer_method,
-            asr_calculation_method: prayer_settings.asr_method,
-            current_month: chrono::Local::now().naive_utc().date(),
-        }
-        .build(),
-    )
-    .await
-    .map_err(|_| AdhanError::Request)?;
-    let content = response.text().await.map_err(|_| AdhanError::Download)?;
+    let response = reqwest::get(prayer_settings.query())
+        .await
+        .map_err(|x| AdhanError::Request(Box::new(x)))?;
+    let content = response.text().await.map_err(|x| AdhanError::Request(Box::new(x)))?;
     Ok(content)
 }
