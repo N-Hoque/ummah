@@ -1,11 +1,11 @@
-use chrono::{Datelike, Duration, Local, NaiveDate, NaiveTime};
-use serde::Deserialize;
-
 use crate::{
     day::Day,
     prayer::Prayer,
     types::{AdhanError, AdhanResult, Kind},
 };
+
+use chrono::{Datelike, Duration, Local, NaiveDate, NaiveTime};
+use serde::Deserialize;
 
 #[derive(Debug, Deserialize)]
 pub struct CSVPrayer {

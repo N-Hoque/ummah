@@ -1,4 +1,4 @@
-use adhan_rs::{
+use adhan::{
     arguments::PrayerArguments,
     core::{get_prayer_times, try_get_today},
     types::AdhanResult,

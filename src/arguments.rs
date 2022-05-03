@@ -1,11 +1,11 @@
-use chrono::{Datelike, Local};
-use clap::Parser;
-use serde::{Deserialize, Serialize};
-
 use crate::{
     prayer::settings::PrayerSettings,
     types::{AsrCalculationMethod, LatitudeMethod, PrayerCalculationMethod},
 };
+
+use chrono::{Datelike, Local};
+use clap::Parser;
+use serde::{Deserialize, Serialize};
 
 /// Gets prayer times from www.salahtimes.com
 #[derive(Parser, Debug, PartialEq, Eq, Serialize, Deserialize)]

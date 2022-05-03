@@ -1,7 +1,7 @@
+use crate::types::{AsrCalculationMethod, LatitudeMethod, PrayerCalculationMethod};
+
 use chrono::{Datelike, NaiveDate};
 use chrono_utilities::naive::DateTransitions;
-
-use crate::types::{AsrCalculationMethod, LatitudeMethod, PrayerCalculationMethod};
 
 static LINK: &str = "https://www.salahtimes.com/uk/bath/csv";
 

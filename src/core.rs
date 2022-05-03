@@ -1,13 +1,22 @@
+use crate::{
+    day::Day,
+    prayer::settings::PrayerSettings,
+    request_parser::csv_parser::CSVPrayer,
+    types::{AdhanError, AdhanResult},
+};
+
 use chrono::Local;
 
-use crate::day::Day;
-use crate::prayer::settings::PrayerSettings;
-use crate::request_parser::csv_parser::CSVPrayer;
-use crate::types::{AdhanError, AdhanResult};
 use serde::Serialize;
 
-use std::fs::File;
-use std::io::Write;
+use std::{
+    fs::File,
+    io::Write,
+    path::{Path, PathBuf},
+};
+
+static CURRENT_MONTH: &str = "current_month.yaml";
+static CURRENT_SETTINGS: &str = ".current_settings.yaml";
 
 pub async fn get_prayer_times(prayer_settings: &PrayerSettings) -> AdhanResult<Vec<Day>> {
     match (check_settings(prayer_settings), from_yaml()) {
@@ -23,7 +32,9 @@ pub fn try_get_today(month: &[Day]) -> Option<&Day> {
 }
 
 fn check_settings(prayer_settings: &PrayerSettings) -> bool {
-    match open_file(".current_settings.yaml") {
+    let path = get_cache_filepath()
+        .map_or_else(|| CURRENT_SETTINGS.into(), |dir| dir.join(CURRENT_SETTINGS));
+    match open_file(path) {
         Err(_) => false,
         Ok(file) => match serde_yaml::from_reader::<_, PrayerSettings>(file) {
             Err(_) => false,
@@ -33,7 +44,9 @@ fn check_settings(prayer_settings: &PrayerSettings) -> bool {
 }
 
 fn from_yaml() -> Option<Vec<Day>> {
-    match open_file("current_month.yaml") {
+    let path =
+        get_month_filepath().map_or_else(|| CURRENT_MONTH.into(), |dir| dir.join(CURRENT_MONTH));
+    match open_file(path) {
         Err(_) => None,
         Ok(file) => serde_yaml::from_reader(file).ok(),
     }
@@ -41,12 +54,16 @@ fn from_yaml() -> Option<Vec<Day>> {
 
 async fn from_csv(prayer_settings: &PrayerSettings) -> AdhanResult<Vec<Day>> {
     print!("Loading times...\r");
-    std::io::stdout().flush().map_err(|x| AdhanError::Request(Box::new(x)))?;
+    std::io::stdout()
+        .flush()
+        .map_err(|x| AdhanError::Request(Box::new(x)))?;
 
     let data = download_csv_file(prayer_settings).await?;
 
-    print!("{:<17}", "");
-    std::io::stdout().flush().map_err(|x| AdhanError::Request(Box::new(x)))?;
+    print!("{:<17}\r", "");
+    std::io::stdout()
+        .flush()
+        .map_err(|x| AdhanError::Request(Box::new(x)))?;
 
     let mut csv_reader = csv::Reader::from_reader(data.as_bytes());
 
@@ -64,21 +81,6 @@ async fn from_csv(prayer_settings: &PrayerSettings) -> AdhanResult<Vec<Day>> {
     Ok(days)
 }
 
-fn cache_times(days: &Vec<Day>, prayer_settings: &PrayerSettings) -> AdhanResult<()> {
-    write_file("current_month.yaml", days)?;
-    write_file(".current_settings.yaml", &prayer_settings)?;
-    Ok(())
-}
-
-fn open_file(path: &str) -> AdhanResult<File> {
-    File::open(path).map_err(AdhanError::File)
-}
-
-fn write_file<T: Serialize>(path: &str, data: &T) -> AdhanResult<()> {
-    let mut file = File::create(path).map_err(AdhanError::File)?;
-    serde_yaml::to_writer(&mut file, data).map_err(AdhanError::Serde)
-}
-
 async fn download_csv_file(prayer_settings: &PrayerSettings) -> AdhanResult<String> {
     let response = reqwest::get(prayer_settings.query())
         .await
@@ -88,4 +90,37 @@ async fn download_csv_file(prayer_settings: &PrayerSettings) -> AdhanResult<Stri
         .await
         .map_err(|x| AdhanError::Request(Box::new(x)))?;
     Ok(content)
+}
+
+fn cache_times(days: &Vec<Day>, prayer_settings: &PrayerSettings) -> AdhanResult<()> {
+    if let (Some(docs), Some(cache)) = (get_month_filepath(), get_cache_filepath()) {
+        write_file(&docs, &PathBuf::from(CURRENT_MONTH), days)?;
+        write_file(&cache, &PathBuf::from(CURRENT_SETTINGS), &prayer_settings)?;
+    } else {
+        write_file("adhan", CURRENT_MONTH, days)?;
+        write_file("adhan", CURRENT_SETTINGS, &prayer_settings)?;
+    }
+
+    Ok(())
+}
+
+fn get_month_filepath() -> Option<PathBuf> {
+    dirs_next::document_dir().map(|dir| dir.join("adhan"))
+}
+
+fn get_cache_filepath() -> Option<PathBuf> {
+    dirs_next::cache_dir().map(|dir| dir.join("adhan"))
+}
+
+fn open_file<P: AsRef<Path>>(path: P) -> AdhanResult<File> {
+    File::open(path).map_err(AdhanError::File)
+}
+
+fn write_file<P: AsRef<Path>, T: Serialize>(dir: P, file: P, data: &T) -> AdhanResult<()> {
+    if std::fs::read_dir(&dir).is_err() {
+        std::fs::create_dir_all(&dir).map_err(AdhanError::File)?;
+    }
+
+    let mut file = File::create(dir.as_ref().join(file)).map_err(AdhanError::File)?;
+    serde_yaml::to_writer(&mut file, data).map_err(AdhanError::Serde)
 }

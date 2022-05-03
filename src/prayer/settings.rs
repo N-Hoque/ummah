@@ -1,10 +1,10 @@
-use chrono::Local;
-use serde::{Deserialize, Serialize};
-
 use crate::{
     request_parser::query_builder::PrayerQueryBuilder,
     types::{AsrCalculationMethod, LatitudeMethod, PrayerCalculationMethod},
 };
+
+use chrono::Local;
+use serde::{Deserialize, Serialize};
 
 #[derive(PartialEq, Eq, Serialize, Deserialize)]
 pub struct PrayerSettings {
