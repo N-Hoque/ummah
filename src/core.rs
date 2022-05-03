@@ -7,6 +7,7 @@ use crate::types::{AdhanError, AdhanResult};
 use serde::Serialize;
 
 use std::fs::File;
+use std::io::Write;
 
 pub async fn get_prayer_times(prayer_settings: &PrayerSettings) -> AdhanResult<Vec<Day>> {
     match (check_settings(prayer_settings), from_yaml()) {
@@ -39,7 +40,13 @@ fn from_yaml() -> Option<Vec<Day>> {
 }
 
 async fn from_csv(prayer_settings: &PrayerSettings) -> AdhanResult<Vec<Day>> {
+    print!("Loading times...\r");
+    std::io::stdout().flush().map_err(|x| AdhanError::Request(Box::new(x)))?;
+
     let data = download_csv_file(prayer_settings).await?;
+
+    print!("{:<17}", "");
+    std::io::stdout().flush().map_err(|x| AdhanError::Request(Box::new(x)))?;
 
     let mut csv_reader = csv::Reader::from_reader(data.as_bytes());
 
