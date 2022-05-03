@@ -4,42 +4,55 @@ use thiserror::Error;
 
 use std::{error, fmt, io};
 
+/// Wrapper around [Result]
 pub type AdhanResult<T> = Result<T, AdhanError>;
 
+/// Represents all possible program errors
 #[derive(Debug, Error)]
 pub enum AdhanError {
+    /// Thrown when attempting to submit request to website
     #[error("Failed to request times")]
     Request(#[from] Box<dyn error::Error>),
 
+    /// Thrown when parsing CSV file
     #[error("Failed to read CSV file")]
     CSV(#[from] csv::Error),
 
+    /// Thrown when parsing timestamps
     #[error("Failed to parse time")]
     DateTime(#[from] chrono::ParseError),
 
-    #[error("Failed to process file")]
-    File(#[from] io::Error),
+    /// Thrown on file/IO errors
+    #[error("Failed to handle filesystem/IO")]
+    IO(#[from] io::Error),
 
+    /// Thrown on (de)serialization errors
     #[error("Failed to (de)serialize")]
     Serde(#[from] serde_yaml::Error),
 }
 
+/// The method to determine the height of the sun
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Clone, Copy, ArgEnum)]
-pub(crate) enum LatitudeMethod {
+pub enum LatitudeMethod {
     OneSeventh = 3,
     AngleBased,
 }
 
+/// The organisation to base the calculations from
 #[allow(clippy::upper_case_acronyms)]
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Clone, Copy, ArgEnum)]
-pub(crate) enum PrayerCalculationMethod {
+pub enum PrayerCalculationMethod {
+    /// Muslim World League
     MWL = 1,
+    /// University of Islamic Sciences
     UIS = 3,
+    /// Islamic Society of North America
     ISNA = 5,
 }
 
+/// The school of thought to follow for the afternoon prayer
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Clone, Copy, ArgEnum)]
-pub(crate) enum AsrCalculationMethod {
+pub enum AsrCalculationMethod {
     Shafi = 1,
     Hanafi,
 }

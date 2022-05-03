@@ -5,6 +5,7 @@ use serde::{Deserialize, Serialize};
 
 use std::{cmp::Ordering, fmt};
 
+/// Holds all prayers for a given day
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]
 pub struct Day {
     pub(crate) date: NaiveDate,

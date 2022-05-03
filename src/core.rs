@@ -18,6 +18,29 @@ use std::{
 static CURRENT_MONTH: &str = "current_month.yaml";
 static CURRENT_SETTINGS: &str = ".current_settings.yaml";
 
+/// Collect all prayer times for the current month
+///
+/// # Example
+/// ```
+/// use adhan::{
+///     core::{get_prayer_times, try_get_today},
+///     prayer::settings::PrayerSettings,
+///     types::{AdhanResult, LatitudeMethod, PrayerCalculationMethod, AsrCalculationMethod}
+/// };
+///
+/// async fn test() -> AdhanResult<()> {
+///     let settings = PrayerSettings::new(LatitudeMethod::OneSeventh, PrayerCalculationMethod::MWL, AsrCalculationMethod::Shafi);
+///     let month = get_prayer_times(&settings).await?;
+///     assert!(!month.is_empty());
+///
+///     // Print all days in the month
+///     for day in month {
+///         println!("{}", day);
+///     }
+///
+///     Ok(())
+/// }
+/// ```
 pub async fn get_prayer_times(prayer_settings: &PrayerSettings) -> AdhanResult<Vec<Day>> {
     match (check_settings(prayer_settings), from_yaml()) {
         (true, Some(month)) => Ok(month),
@@ -25,6 +48,30 @@ pub async fn get_prayer_times(prayer_settings: &PrayerSettings) -> AdhanResult<V
     }
 }
 
+/// Show the prayer times for today
+///
+/// # Example
+/// ```
+/// use adhan::{
+///     core::{get_prayer_times, try_get_today},
+///     prayer::settings::PrayerSettings,
+///     types::{AdhanResult, LatitudeMethod, PrayerCalculationMethod, AsrCalculationMethod}
+/// };
+///
+/// async fn test() -> AdhanResult<()> {
+///     let settings = PrayerSettings::new(LatitudeMethod::OneSeventh, PrayerCalculationMethod::MWL, AsrCalculationMethod::Shafi);
+///     let month = get_prayer_times(&settings).await?;
+///     assert!(!month.is_empty());
+///
+///     let today = try_get_today(&month);
+///
+///     if let Some(today) = today {
+///         println!("{}", today);
+///     }
+///
+///     Ok(())
+/// }
+/// ```
 pub fn try_get_today(month: &[Day]) -> Option<&Day> {
     let today = Local::now().date().naive_utc();
     let today = month.iter().find(|day| day.get_date() == today);
@@ -113,14 +160,14 @@ fn get_cache_filepath() -> Option<PathBuf> {
 }
 
 fn open_file<P: AsRef<Path>>(path: P) -> AdhanResult<File> {
-    File::open(path).map_err(AdhanError::File)
+    File::open(path).map_err(AdhanError::IO)
 }
 
 fn write_file<P: AsRef<Path>, T: Serialize>(dir: P, file: P, data: &T) -> AdhanResult<()> {
     if std::fs::read_dir(&dir).is_err() {
-        std::fs::create_dir_all(&dir).map_err(AdhanError::File)?;
+        std::fs::create_dir_all(&dir).map_err(AdhanError::IO)?;
     }
 
-    let mut file = File::create(dir.as_ref().join(file)).map_err(AdhanError::File)?;
+    let mut file = File::create(dir.as_ref().join(file)).map_err(AdhanError::IO)?;
     serde_yaml::to_writer(&mut file, data).map_err(AdhanError::Serde)
 }

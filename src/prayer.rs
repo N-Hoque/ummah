@@ -7,6 +7,7 @@ use serde::{Deserialize, Serialize};
 
 use std::fmt;
 
+/// Represents an individual prayer
 #[derive(Debug, Serialize, Deserialize, Clone, Copy, PartialEq, Eq)]
 pub struct Prayer {
     pub(crate) kind: Kind,

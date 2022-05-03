@@ -3,11 +3,10 @@ use crate::{
     types::{AsrCalculationMethod, LatitudeMethod, PrayerCalculationMethod},
 };
 
-use chrono::{Datelike, Local};
 use clap::Parser;
 use serde::{Deserialize, Serialize};
 
-/// Gets prayer times from www.salahtimes.com
+/// Gets prayer times from www.salahtimes.com/uk
 #[derive(Parser, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[clap(author, version, about, long_about = None)]
 pub struct PrayerArguments {
@@ -29,15 +28,12 @@ pub struct PrayerArguments {
 }
 
 impl PrayerArguments {
+    /// Get prayer calculation settings
     pub fn settings(&self) -> PrayerSettings {
-        PrayerSettings {
-            latitude_method: self.latitude_method,
-            prayer_method: self.prayer_method,
-            asr_method: self.asr_method,
-            current_month: Local::now().month(),
-        }
+        PrayerSettings::new(self.latitude_method, self.prayer_method, self.asr_method)
     }
 
+    /// Flag for selecting only today's prayer times
     pub fn is_today_only(&self) -> bool {
         self.today_only
     }
