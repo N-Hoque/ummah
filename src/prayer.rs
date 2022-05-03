@@ -1,3 +1,5 @@
+pub mod settings;
+
 use crate::types::Kind;
 
 use chrono::NaiveTime;

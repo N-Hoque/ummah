@@ -1,78 +1,22 @@
+pub mod arguments;
 pub(crate) mod day;
 pub(crate) mod prayer;
 pub(crate) mod request_parser;
 pub mod types;
 
-use chrono::{Datelike, Local};
-use clap::Parser;
+use chrono::Local;
+
 use day::Day;
-use request_parser::{csv_parser::CSVPrayer, query_builder::PrayerQueryBuilder};
-use serde::{Deserialize, Serialize};
-use types::{
-    AdhanError, AdhanResult, AsrCalculationMethod, LatitudeMethod, PrayerCalculationMethod,
-};
+use prayer::settings::PrayerSettings;
+use request_parser::csv_parser::CSVPrayer;
+use serde::Serialize;
+use types::{AdhanError, AdhanResult};
 
 use std::fs::File;
 
-/// Gets prayer times from www.salahtimes.com
-#[derive(Parser, Debug, PartialEq, Eq, Serialize, Deserialize)]
-#[clap(author, version, about, long_about = None)]
-pub struct PrayerArguments {
-    /// Latitude method
-    #[clap(short, long, arg_enum, default_value = "one-seventh")]
-    latitude_method: LatitudeMethod,
-
-    /// Source of Prayer calculation
-    #[clap(short, long, arg_enum, default_value = "mwl")]
-    prayer_method: PrayerCalculationMethod,
-
-    /// Asr time method
-    #[clap(short, long, arg_enum, default_value = "shafi")]
-    asr_method: AsrCalculationMethod,
-
-    /// Get today's times
-    #[clap(short, long)]
-    today_only: bool,
-}
-
-impl PrayerArguments {
-    pub fn settings(&self) -> PrayerSettings {
-        PrayerSettings {
-            latitude_method: self.latitude_method,
-            prayer_method: self.prayer_method,
-            asr_method: self.asr_method,
-            current_month: Local::now().month(),
-        }
-    }
-
-    pub fn is_today_only(&self) -> bool {
-        self.today_only
-    }
-}
-
-#[derive(PartialEq, Eq, Serialize, Deserialize)]
-pub struct PrayerSettings {
-    latitude_method: LatitudeMethod,
-    prayer_method: PrayerCalculationMethod,
-    asr_method: AsrCalculationMethod,
-    current_month: u32,
-}
-
-impl PrayerSettings {
-    fn query(&self) -> String {
-        PrayerQueryBuilder {
-            high_latitude_method: self.latitude_method,
-            prayer_calculation_method: self.prayer_method,
-            asr_calculation_method: self.asr_method,
-            current_month: Local::now().naive_utc().date(),
-        }
-        .build()
-    }
-}
-
 pub async fn get_prayer_times(prayer_settings: &PrayerSettings) -> AdhanResult<Vec<Day>> {
-    if check_settings(prayer_settings) {
-        from_yaml()
+    if let (true, Ok(month)) = (check_settings(prayer_settings), from_yaml()) {
+        Ok(month)
     } else {
         from_csv(prayer_settings).await
     }
