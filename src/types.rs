@@ -2,7 +2,7 @@ use clap::ArgEnum;
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
-use std::{fmt, io, error};
+use std::{error, fmt, io};
 
 pub type AdhanResult<T> = Result<T, AdhanError>;
 

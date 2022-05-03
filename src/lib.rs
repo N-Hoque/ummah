@@ -6,7 +6,7 @@ pub mod types;
 use chrono::{Datelike, Local};
 use clap::Parser;
 use day::Day;
-use request_parser::{CSVPrayer, PrayerQueryBuilder};
+use request_parser::{csv_parser::CSVPrayer, query_builder::PrayerQueryBuilder};
 use serde::{Deserialize, Serialize};
 use types::{
     AdhanError, AdhanResult, AsrCalculationMethod, LatitudeMethod, PrayerCalculationMethod,
@@ -137,6 +137,9 @@ async fn download_csv_file(prayer_settings: &PrayerSettings) -> AdhanResult<Stri
     let response = reqwest::get(prayer_settings.query())
         .await
         .map_err(|x| AdhanError::Request(Box::new(x)))?;
-    let content = response.text().await.map_err(|x| AdhanError::Request(Box::new(x)))?;
+    let content = response
+        .text()
+        .await
+        .map_err(|x| AdhanError::Request(Box::new(x)))?;
     Ok(content)
 }
