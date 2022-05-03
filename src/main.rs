@@ -1,4 +1,8 @@
-use adhan_rs::{arguments::PrayerArguments, get_prayer_times, try_get_today, types::AdhanResult};
+use adhan_rs::{
+    arguments::PrayerArguments,
+    core::{get_prayer_times, try_get_today},
+    types::AdhanResult,
+};
 use clap::StructOpt;
 
 #[tokio::main]
