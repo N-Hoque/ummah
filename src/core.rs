@@ -82,7 +82,7 @@ pub fn try_get_today(month: &[Day]) -> Option<&Day> {
     today
 }
 
-pub fn export_html(month: &[Day], no_generate_css: bool) -> AdhanResult<()> {
+pub fn export_html(month: &[Day], generate_css: bool) -> AdhanResult<()> {
     let mut document = html_builder::Buffer::new();
 
     let mut html = document.html().attr("lang=en-gb");
@@ -96,7 +96,7 @@ pub fn export_html(month: &[Day], no_generate_css: bool) -> AdhanResult<()> {
 
     write_file(&user_path, &PathBuf::from(CURRENT_HTML), final_document)?;
 
-    if !no_generate_css {
+    if generate_css {
         generate_default_css()?;
     } else {
         generate_template_css()?;

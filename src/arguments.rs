@@ -30,9 +30,10 @@ pub struct PrayerArguments {
     #[clap(short, long)]
     export: bool,
 
-    /// Disables generation of default CSS for HTML file
+    /// Generate default CSS for HTML file
+    /// If not set, generates template CSS for custom editing
     #[clap(short, long)]
-    no_generate_css: bool,
+    generate_css: bool,
 }
 
 impl PrayerArguments {
@@ -50,7 +51,7 @@ impl PrayerArguments {
         self.export
     }
 
-    pub fn disable_css_generation(&self) -> bool {
-        self.no_generate_css
+    pub fn generate_default_css(&self) -> bool {
+        self.generate_css
     }
 }

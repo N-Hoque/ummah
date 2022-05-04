@@ -16,7 +16,7 @@ async fn main() -> AdhanResult<()> {
             println!("{}", day);
         }
     } else if args.export_enabled() {
-        export_html(&month, args.disable_css_generation())?;
+        export_html(&month, args.generate_default_css())?;
     } else {
         for day in month {
             println!("{}", day);
