@@ -3,7 +3,7 @@ pub(crate) mod html_creator;
 
 use self::{
     fs::{get_cache_filepath, get_user_filepath, open_file, write_file, write_serialized_file},
-    html_creator::{create_table, create_title},
+    html_creator::{create_table, create_title, generate_default_css},
 };
 
 use crate::{
@@ -95,6 +95,7 @@ pub fn export_html(month: &[Day]) -> AdhanResult<()> {
     let user_path = get_user_filepath();
 
     write_file(&user_path, &PathBuf::from(CURRENT_HTML), final_document)?;
+    generate_default_css()?;
 
     Ok(())
 }
