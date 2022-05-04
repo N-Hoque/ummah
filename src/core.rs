@@ -2,7 +2,7 @@ pub(crate) mod fs;
 pub(crate) mod html_creator;
 
 use self::{
-    fs::{get_cache_filepath, get_month_filepath, open_file, write_file, write_serialized_file},
+    fs::{get_cache_filepath, get_user_filepath, open_file, write_file, write_serialized_file},
     html_creator::{create_table, create_title},
 };
 
@@ -20,6 +20,7 @@ use std::{io::Write as IOWrite, path::PathBuf};
 
 static CURRENT_MONTH: &str = "current_month.yaml";
 static CURRENT_SETTINGS: &str = ".current_settings.yaml";
+static CURRENT_HTML: &str = "current_month.html";
 
 /// Collect all prayer times for the current month
 ///
@@ -91,12 +92,15 @@ pub fn export_html(month: &[Day]) -> AdhanResult<()> {
 
     let final_document = document.finish();
 
-    write_file("adhan", "current_month.html", final_document)
+    let user_path = get_user_filepath();
+
+    write_file(&user_path, &PathBuf::from(CURRENT_HTML), final_document)?;
+
+    Ok(())
 }
 
 fn check_settings(prayer_settings: &PrayerSettings) -> bool {
-    let path = get_cache_filepath()
-        .map_or_else(|| CURRENT_SETTINGS.into(), |dir| dir.join(CURRENT_SETTINGS));
+    let path = get_cache_filepath().join(CURRENT_SETTINGS);
     match open_file(path) {
         Err(_) => false,
         Ok(file) => match serde_yaml::from_reader::<_, PrayerSettings>(file) {
@@ -108,7 +112,7 @@ fn check_settings(prayer_settings: &PrayerSettings) -> bool {
 
 fn from_yaml() -> Option<Vec<Day>> {
     let path =
-        get_month_filepath().map_or_else(|| CURRENT_MONTH.into(), |dir| dir.join(CURRENT_MONTH));
+        get_user_filepath().join(CURRENT_MONTH);
     match open_file(path) {
         Err(_) => None,
         Ok(file) => serde_yaml::from_reader(file).ok(),
@@ -156,13 +160,9 @@ async fn download_csv_file(prayer_settings: &PrayerSettings) -> AdhanResult<Stri
 }
 
 fn cache_times(days: &Vec<Day>, prayer_settings: &PrayerSettings) -> AdhanResult<()> {
-    if let (Some(docs), Some(cache)) = (get_month_filepath(), get_cache_filepath()) {
-        write_serialized_file(&docs, &PathBuf::from(CURRENT_MONTH), days)?;
-        write_serialized_file(&cache, &PathBuf::from(CURRENT_SETTINGS), &prayer_settings)?;
-    } else {
-        write_serialized_file("adhan", CURRENT_MONTH, days)?;
-        write_serialized_file("adhan", CURRENT_SETTINGS, &prayer_settings)?;
-    }
+    let (docs, cache) = (get_user_filepath(), get_cache_filepath());
+    write_serialized_file(&docs, &PathBuf::from(CURRENT_MONTH), days)?;
+    write_serialized_file(&cache, &PathBuf::from(CURRENT_SETTINGS), &prayer_settings)?;
 
     Ok(())
 }

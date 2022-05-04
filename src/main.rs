@@ -16,7 +16,6 @@ async fn main() -> AdhanResult<()> {
             println!("{}", day);
         }
     } else if args.export_enabled() {
-        println!("Exporting times to current_month.html");
         export_html(&month)?;
     } else {
         for day in month {
