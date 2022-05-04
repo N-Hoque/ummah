@@ -25,6 +25,10 @@ pub struct PrayerArguments {
     /// Get today's times
     #[clap(short, long)]
     today_only: bool,
+
+    /// Get today's times
+    #[clap(short, long)]
+    export: bool,
 }
 
 impl PrayerArguments {
@@ -36,5 +40,9 @@ impl PrayerArguments {
     /// Flag for selecting only today's prayer times
     pub fn is_today_only(&self) -> bool {
         self.today_only
+    }
+
+    pub fn export_enabled(&self) -> bool {
+        self.export
     }
 }

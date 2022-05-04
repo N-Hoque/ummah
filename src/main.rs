@@ -1,6 +1,6 @@
 use adhan::{
     arguments::PrayerArguments,
-    core::{get_prayer_times, try_get_today},
+    core::{export_html, get_prayer_times, try_get_today},
     types::AdhanResult,
 };
 use clap::StructOpt;
@@ -15,6 +15,9 @@ async fn main() -> AdhanResult<()> {
         if let Some(day) = try_get_today(&month) {
             println!("{}", day);
         }
+    } else if args.export_enabled() {
+        println!("Exporting times to current_month.html");
+        export_html(&month)?;
     } else {
         for day in month {
             println!("{}", day);

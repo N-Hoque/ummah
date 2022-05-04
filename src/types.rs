@@ -12,7 +12,7 @@ pub type AdhanResult<T> = Result<T, AdhanError>;
 pub enum AdhanError {
     /// Thrown when attempting to submit request to website
     #[error("Failed to request times")]
-    Request(#[from] Box<dyn error::Error>),
+    Unknown(#[from] Box<dyn error::Error>),
 
     /// Thrown when parsing CSV file
     #[error("Failed to read CSV file")]
