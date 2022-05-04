@@ -26,9 +26,13 @@ pub struct PrayerArguments {
     #[clap(short, long)]
     today_only: bool,
 
-    /// Get today's times
+    /// Exports times to HTML file
     #[clap(short, long)]
     export: bool,
+
+    /// Disables generation of default CSS for HTML file
+    #[clap(short, long)]
+    no_generate_css: bool,
 }
 
 impl PrayerArguments {
@@ -44,5 +48,9 @@ impl PrayerArguments {
 
     pub fn export_enabled(&self) -> bool {
         self.export
+    }
+
+    pub fn disable_css_generation(&self) -> bool {
+        self.no_generate_css
     }
 }

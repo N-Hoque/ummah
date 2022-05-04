@@ -3,7 +3,7 @@ pub(crate) mod html_creator;
 
 use self::{
     fs::{get_cache_filepath, get_user_filepath, open_file, write_file, write_serialized_file},
-    html_creator::{create_table, create_title, generate_default_css},
+    html_creator::{create_table, create_title, generate_default_css, generate_template_css},
 };
 
 use crate::{
@@ -82,7 +82,7 @@ pub fn try_get_today(month: &[Day]) -> Option<&Day> {
     today
 }
 
-pub fn export_html(month: &[Day]) -> AdhanResult<()> {
+pub fn export_html(month: &[Day], no_generate_css: bool) -> AdhanResult<()> {
     let mut document = html_builder::Buffer::new();
 
     let mut html = document.html().attr("lang=en-gb");
@@ -95,7 +95,12 @@ pub fn export_html(month: &[Day]) -> AdhanResult<()> {
     let user_path = get_user_filepath();
 
     write_file(&user_path, &PathBuf::from(CURRENT_HTML), final_document)?;
-    generate_default_css()?;
+
+    if !no_generate_css {
+        generate_default_css()?;
+    } else {
+        generate_template_css()?;
+    }
 
     Ok(())
 }
@@ -112,8 +117,7 @@ fn check_settings(prayer_settings: &PrayerSettings) -> bool {
 }
 
 fn from_yaml() -> Option<Vec<Day>> {
-    let path =
-        get_user_filepath().join(CURRENT_MONTH);
+    let path = get_user_filepath().join(CURRENT_MONTH);
     match open_file(path) {
         Err(_) => None,
         Ok(file) => serde_yaml::from_reader(file).ok(),
