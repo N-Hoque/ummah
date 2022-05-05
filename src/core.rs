@@ -1,10 +1,9 @@
 pub(crate) mod fs;
-pub(crate) mod html_creator;
 pub(crate) mod request_handler;
+pub mod timetable_generator;
 
 use self::{
     fs::{get_cache_filepath, get_user_filepath, open_file, write_file, write_serialized_file},
-    html_creator::{create_table, create_title, generate_default_css, generate_template_css},
     request_handler::download_file,
 };
 
@@ -17,13 +16,11 @@ use crate::{
 
 use bytes::Bytes;
 use chrono::Local;
-use html_builder::Html5;
 
 use std::path::PathBuf;
 
 static CURRENT_MONTH: &str = "current_month.yaml";
 static CURRENT_SETTINGS: &str = ".current_settings.yaml";
-static CURRENT_HTML: &str = "current_month.html";
 
 static ADHAN_MP3_LINK: &str = "https://media.sd.ma/assabile/adhan_3435370/8c052a5edec1.mp3";
 
@@ -85,34 +82,6 @@ pub fn try_get_today(month: &[Day]) -> Option<&Day> {
     let today = Local::now().date().naive_utc();
     let today = month.iter().find(|day| day.get_date() == today);
     today
-}
-
-/// Creates an HTML page for the prayer timetable
-pub fn export_html(month: &[Day], generate_css: bool) -> AdhanResult<()> {
-    let mut document = html_builder::Buffer::new();
-
-    let mut html = document.html().attr("lang=en-gb");
-
-    create_title(&mut html)?;
-    create_table(&mut html, month)?;
-
-    let final_document = document.finish();
-
-    let user_path = get_user_filepath();
-
-    write_file(
-        &user_path,
-        &PathBuf::from(CURRENT_HTML),
-        final_document.as_bytes(),
-    )?;
-
-    if generate_css {
-        generate_default_css()?;
-    } else {
-        generate_template_css()?;
-    }
-
-    Ok(())
 }
 
 fn check_settings(prayer_settings: &PrayerSettings) -> bool {

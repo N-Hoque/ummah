@@ -1,6 +1,6 @@
 use adhan::{
     arguments::PrayerArguments,
-    core::{export_html, get_prayer_times, try_get_today},
+    core::{get_prayer_times, timetable_generator::TimetableGenerator, try_get_today},
     types::AdhanResult,
 };
 use clap::StructOpt;
@@ -16,7 +16,8 @@ async fn main() -> AdhanResult<()> {
             println!("{}", day);
         }
     } else if args.export_enabled() {
-        export_html(&month, args.generate_default_css())?;
+        let generator = TimetableGenerator::new(args.generate_default_css());
+        generator.generate(&month)?;
     } else {
         for day in month {
             println!("{}", day);
