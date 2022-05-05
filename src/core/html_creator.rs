@@ -87,7 +87,7 @@ pub fn generate_default_css() -> AdhanResult<()> {
     write_file(
         get_user_filepath(),
         std::path::PathBuf::from("current_month.css"),
-        css.to_owned(),
+        css.as_bytes(),
     )
 }
 
@@ -105,6 +105,6 @@ h1 {font-family:Arial, sans-serif;text-align:center;}
     write_file(
         get_user_filepath(),
         std::path::PathBuf::from("current_month.css"),
-        css.to_owned(),
+        css.as_bytes(),
     )
 }

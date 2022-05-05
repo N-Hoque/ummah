@@ -9,18 +9,22 @@ use self::{
 use crate::{
     day::Day,
     prayer::settings::PrayerSettings,
-    request_parser::CSVPrayer,
+    request_parser::parse_csv_file,
     types::{AdhanError, AdhanResult},
 };
 
+use bytes::Bytes;
 use chrono::Local;
 use html_builder::Html5;
+use reqwest::IntoUrl;
 
 use std::{io::Write as IOWrite, path::PathBuf};
 
 static CURRENT_MONTH: &str = "current_month.yaml";
 static CURRENT_SETTINGS: &str = ".current_settings.yaml";
 static CURRENT_HTML: &str = "current_month.html";
+
+static ADHAN_MP3_LINK: &str = "https://media.sd.ma/assabile/adhan_3435370/8c052a5edec1.mp3";
 
 /// Collect all prayer times for the current month
 ///
@@ -46,9 +50,9 @@ static CURRENT_HTML: &str = "current_month.html";
 /// }
 /// ```
 pub async fn get_prayer_times(prayer_settings: &PrayerSettings) -> AdhanResult<Vec<Day>> {
-    match (check_settings(prayer_settings), from_yaml()) {
+    match (check_settings(prayer_settings), load_cache()) {
         (true, Some(month)) => Ok(month),
-        _ => from_csv(prayer_settings).await,
+        _ => request_times(prayer_settings).await,
     }
 }
 
@@ -94,7 +98,11 @@ pub fn export_html(month: &[Day], generate_css: bool) -> AdhanResult<()> {
 
     let user_path = get_user_filepath();
 
-    write_file(&user_path, &PathBuf::from(CURRENT_HTML), final_document)?;
+    write_file(
+        &user_path,
+        &PathBuf::from(CURRENT_HTML),
+        final_document.as_bytes(),
+    )?;
 
     if generate_css {
         generate_default_css()?;
@@ -116,7 +124,7 @@ fn check_settings(prayer_settings: &PrayerSettings) -> bool {
     }
 }
 
-fn from_yaml() -> Option<Vec<Day>> {
+fn load_cache() -> Option<Vec<Day>> {
     let path = get_user_filepath().join(CURRENT_MONTH);
     match open_file(path) {
         Err(_) => None,
@@ -124,50 +132,51 @@ fn from_yaml() -> Option<Vec<Day>> {
     }
 }
 
-async fn from_csv(prayer_settings: &PrayerSettings) -> AdhanResult<Vec<Day>> {
-    print!("Loading times...\r");
-    std::io::stdout()
-        .flush()
-        .map_err(|x| AdhanError::Unknown(Box::new(x)))?;
+async fn request_times(prayer_settings: &PrayerSettings) -> AdhanResult<Vec<Day>> {
+    let timetable = download_file(prayer_settings.query(Local::now().date().naive_utc()), "Downloading times").await?;
 
-    let data = download_csv_file(prayer_settings).await?;
+    let days = parse_csv_file(timetable)?;
 
-    print!("{:<17}\r", "");
-    std::io::stdout()
-        .flush()
-        .map_err(|x| AdhanError::Unknown(Box::new(x)))?;
+    let audio = download_file(ADHAN_MP3_LINK, "Downloading adhan").await?;
 
-    let mut csv_reader = csv::Reader::from_reader(data.as_bytes());
-
-    let mut days = vec![];
-    for record in csv_reader.records() {
-        let day = record
-            .and_then(|x| x.deserialize::<'_, CSVPrayer>(None))
-            .map_err(AdhanError::CSV)?
-            .build()?;
-        days.push(day);
-    }
-
-    cache_times(&days, prayer_settings)?;
+    cache_data(&days, audio, prayer_settings)?;
 
     Ok(days)
 }
 
-async fn download_csv_file(prayer_settings: &PrayerSettings) -> AdhanResult<String> {
-    let response = reqwest::get(prayer_settings.query(Local::now().date().naive_local()))
+async fn download_file<T: IntoUrl>(url: T, progress_message: &str) -> AdhanResult<Bytes> {
+    print!("{}...\r", progress_message);
+    std::io::stdout()
+        .flush()
+        .map_err(|x| AdhanError::Unknown(Box::new(x)))?;
+    let data = request_file(url).await?;
+    print!("{:<32}\r", "");
+    std::io::stdout()
+        .flush()
+        .map_err(|x| AdhanError::Unknown(Box::new(x)))?;
+    Ok(data)
+}
+
+async fn request_file<T: IntoUrl>(url: T) -> AdhanResult<Bytes> {
+    let response = reqwest::get(url)
         .await
         .map_err(|x| AdhanError::Unknown(Box::new(x)))?;
     let content = response
-        .text()
+        .bytes()
         .await
         .map_err(|x| AdhanError::Unknown(Box::new(x)))?;
     Ok(content)
 }
 
-fn cache_times(days: &Vec<Day>, prayer_settings: &PrayerSettings) -> AdhanResult<()> {
+fn cache_data(days: &Vec<Day>, audio: Bytes, prayer_settings: &PrayerSettings) -> AdhanResult<()> {
     let (docs, cache) = (get_user_filepath(), get_cache_filepath());
+    write_file(&docs, &PathBuf::from("adhan.mp3"), audio.as_ref())?;
     write_serialized_file(&docs, &PathBuf::from(CURRENT_MONTH), days)?;
-    write_serialized_file(&cache, &PathBuf::from(CURRENT_SETTINGS), &prayer_settings)?;
+    write_serialized_file(
+        &cache,
+        &PathBuf::from(CURRENT_SETTINGS),
+        &prayer_settings.clone().with_audio_downloaded(),
+    )?;
 
     Ok(())
 }

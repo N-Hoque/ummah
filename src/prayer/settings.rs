@@ -6,24 +6,25 @@ use serde::{Deserialize, Serialize};
 
 static LINK: &str = "https://www.salahtimes.com/";
 
-#[derive(PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub(crate) struct CalculationMethods {
     pub(crate) latitude: LatitudeMethod,
     pub(crate) prayer: PrayerMethod,
     pub(crate) asr: AsrMethod,
 }
 
-#[derive(PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub(crate) struct Location {
     pub(crate) country: String,
     pub(crate) city: String,
 }
 
 /// Settings for calculating prayer times and determining current month of prayers
-#[derive(PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct PrayerSettings {
     pub(crate) methods: CalculationMethods,
     pub(crate) location: Location,
+    is_audio_downloaded: bool,
     current_month: u32,
 }
 
@@ -32,7 +33,15 @@ impl PrayerSettings {
         Self {
             methods,
             location,
+            is_audio_downloaded: false,
             current_month: Local::now().month(),
+        }
+    }
+
+    pub(crate) fn with_audio_downloaded(self) -> Self {
+        Self {
+            is_audio_downloaded: true,
+            ..self
         }
     }
 

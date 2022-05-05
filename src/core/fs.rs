@@ -12,7 +12,7 @@ pub fn open_file<P: AsRef<Path>>(path: P) -> AdhanResult<File> {
     File::open(path).map_err(AdhanError::IO)
 }
 
-pub fn write_file<P: AsRef<Path>>(dir: P, file: P, html_data: String) -> AdhanResult<()> {
+pub fn write_file<P: AsRef<Path>>(dir: P, file: P, data: &[u8]) -> AdhanResult<()> {
     create_dir(&dir)?;
 
     let path = dir.as_ref().join(file);
@@ -20,7 +20,8 @@ pub fn write_file<P: AsRef<Path>>(dir: P, file: P, html_data: String) -> AdhanRe
     println!("Writing file to {:?}", path);
 
     let mut file = File::create(path).map_err(AdhanError::IO)?;
-    write!(&mut file, "{}", html_data).map_err(AdhanError::IO)
+
+    file.write(data).map(|_| ()).map_err(AdhanError::IO)
 }
 
 pub fn write_serialized_file<P: AsRef<Path>, T: Serialize>(
