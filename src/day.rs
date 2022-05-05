@@ -21,7 +21,7 @@ impl fmt::Display for Day {
         output += &format!("|{:=<62}|\n|", "");
 
         for (idx, prayer) in self.prayers.iter().enumerate() {
-            output += &format!("{:^10}", prayer.kind.to_string());
+            output += &format!("{:^10}", prayer.name.to_string());
             if idx < 4 {
                 output += " | ";
             }

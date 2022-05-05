@@ -10,13 +10,13 @@ use std::fmt;
 /// Represents an individual prayer
 #[derive(Debug, Serialize, Deserialize, Clone, Copy, PartialEq, Eq)]
 pub struct Prayer {
-    pub(crate) kind: PrayerName,
+    pub(crate) name: PrayerName,
     pub(crate) time: NaiveTime,
 }
 
 impl fmt::Display for Prayer {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self.kind {
+        match self.name {
             PrayerName::Fajr => write!(f, "Fajr: {}", self.time),
             PrayerName::Dhuhr => write!(f, "Dhuhr: {}", self.time),
             PrayerName::Asr => write!(f, "Asr: {}", self.time),
@@ -27,7 +27,7 @@ impl fmt::Display for Prayer {
 }
 
 impl Prayer {
-    pub(crate) fn new(kind: PrayerName, time: NaiveTime) -> Self {
-        Self { kind, time }
+    pub(crate) fn new(name: PrayerName, time: NaiveTime) -> Self {
+        Self { name, time }
     }
 }
