@@ -1,24 +1,25 @@
 pub(crate) mod fs;
 pub(crate) mod html_creator;
+pub(crate) mod request_handler;
 
 use self::{
     fs::{get_cache_filepath, get_user_filepath, open_file, write_file, write_serialized_file},
     html_creator::{create_table, create_title, generate_default_css, generate_template_css},
+    request_handler::download_file,
 };
 
 use crate::{
     day::Day,
     prayer::settings::PrayerSettings,
     request_parser::parse_csv_file,
-    types::{AdhanError, AdhanResult},
+    types::AdhanResult,
 };
 
 use bytes::Bytes;
 use chrono::Local;
 use html_builder::Html5;
-use reqwest::IntoUrl;
 
-use std::{io::Write as IOWrite, path::PathBuf};
+use std::path::PathBuf;
 
 static CURRENT_MONTH: &str = "current_month.yaml";
 static CURRENT_SETTINGS: &str = ".current_settings.yaml";
@@ -50,7 +51,7 @@ static ADHAN_MP3_LINK: &str = "https://media.sd.ma/assabile/adhan_3435370/8c052a
 /// }
 /// ```
 pub async fn get_prayer_times(prayer_settings: &PrayerSettings) -> AdhanResult<Vec<Day>> {
-    match (check_settings(prayer_settings), load_cache()) {
+    match (check_settings(prayer_settings), load_data()) {
         (true, Some(month)) => Ok(month),
         _ => request_times(prayer_settings).await,
     }
@@ -86,6 +87,7 @@ pub fn try_get_today(month: &[Day]) -> Option<&Day> {
     today
 }
 
+/// Creates an HTML page for the prayer timetable
 pub fn export_html(month: &[Day], generate_css: bool) -> AdhanResult<()> {
     let mut document = html_builder::Buffer::new();
 
@@ -124,7 +126,7 @@ fn check_settings(prayer_settings: &PrayerSettings) -> bool {
     }
 }
 
-fn load_cache() -> Option<Vec<Day>> {
+fn load_data() -> Option<Vec<Day>> {
     let path = get_user_filepath().join(CURRENT_MONTH);
     match open_file(path) {
         Err(_) => None,
@@ -142,30 +144,6 @@ async fn request_times(prayer_settings: &PrayerSettings) -> AdhanResult<Vec<Day>
     cache_data(&days, audio, prayer_settings)?;
 
     Ok(days)
-}
-
-async fn download_file<T: IntoUrl>(url: T, progress_message: &str) -> AdhanResult<Bytes> {
-    print!("{}...\r", progress_message);
-    std::io::stdout()
-        .flush()
-        .map_err(|x| AdhanError::Unknown(Box::new(x)))?;
-    let data = request_file(url).await?;
-    print!("{:<32}\r", "");
-    std::io::stdout()
-        .flush()
-        .map_err(|x| AdhanError::Unknown(Box::new(x)))?;
-    Ok(data)
-}
-
-async fn request_file<T: IntoUrl>(url: T) -> AdhanResult<Bytes> {
-    let response = reqwest::get(url)
-        .await
-        .map_err(|x| AdhanError::Unknown(Box::new(x)))?;
-    let content = response
-        .bytes()
-        .await
-        .map_err(|x| AdhanError::Unknown(Box::new(x)))?;
-    Ok(content)
 }
 
 fn cache_data(days: &Vec<Day>, audio: Bytes, prayer_settings: &PrayerSettings) -> AdhanResult<()> {
