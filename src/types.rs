@@ -7,28 +7,25 @@ use std::{error, fmt, io};
 /// Wrapper around [Result]
 pub type AdhanResult<T> = Result<T, AdhanError>;
 
-/// Represents all possible program errors
-#[derive(Debug, Error)]
-pub enum AdhanError {
-    /// Thrown when attempting to submit request to website
-    #[error("Failed to request times")]
-    Unknown(#[from] Box<dyn error::Error>),
+#[derive(Debug, Serialize, Deserialize, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum PrayerName {
+    Fajr,
+    Dhuhr,
+    Asr,
+    Maghrib,
+    Isha,
+}
 
-    /// Thrown when parsing CSV file
-    #[error("Failed to read CSV file")]
-    CSV(#[from] csv::Error),
-
-    /// Thrown when parsing timestamps
-    #[error("Failed to parse time")]
-    DateTime(#[from] chrono::ParseError),
-
-    /// Thrown on file/IO errors
-    #[error("Failed to handle filesystem/IO")]
-    IO(#[from] io::Error),
-
-    /// Thrown on (de)serialization errors
-    #[error("Failed to (de)serialize")]
-    Serde(#[from] serde_yaml::Error),
+impl fmt::Display for PrayerName {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            PrayerName::Fajr => write!(f, "Fajr"),
+            PrayerName::Dhuhr => write!(f, "Dhuhr"),
+            PrayerName::Asr => write!(f, "Asr"),
+            PrayerName::Maghrib => write!(f, "Maghrib"),
+            PrayerName::Isha => write!(f, "Isha"),
+        }
+    }
 }
 
 /// The method to determine the height of the sun
@@ -57,23 +54,28 @@ pub enum AsrMethod {
     Hanafi,
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone, Copy, PartialEq, Eq)]
-pub(crate) enum PrayerName {
-    Fajr,
-    Dhuhr,
-    Asr,
-    Maghrib,
-    Isha,
-}
 
-impl fmt::Display for PrayerName {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            PrayerName::Fajr => write!(f, "Fajr"),
-            PrayerName::Dhuhr => write!(f, "Dhuhr"),
-            PrayerName::Asr => write!(f, "Asr"),
-            PrayerName::Maghrib => write!(f, "Maghrib"),
-            PrayerName::Isha => write!(f, "Isha"),
-        }
-    }
+
+/// Represents all possible program errors
+#[derive(Debug, Error)]
+pub enum AdhanError {
+    /// Thrown when attempting to submit request to website
+    #[error("Failed to request times")]
+    Unknown(#[from] Box<dyn error::Error>),
+
+    /// Thrown when parsing CSV file
+    #[error("Failed to read CSV file")]
+    CSV(#[from] csv::Error),
+
+    /// Thrown when parsing timestamps
+    #[error("Failed to parse time")]
+    DateTime(#[from] chrono::ParseError),
+
+    /// Thrown on file/IO errors
+    #[error("Failed to handle filesystem/IO")]
+    IO(#[from] io::Error),
+
+    /// Thrown on (de)serialization errors
+    #[error("Failed to (de)serialize")]
+    Serde(#[from] serde_yaml::Error),
 }
