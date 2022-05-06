@@ -1,6 +1,6 @@
 use crate::{
-    prayer::settings::PrayerSettings,
-    types::{AsrCalculationMethod, LatitudeMethod, PrayerCalculationMethod},
+    prayer::settings::{Location, CalculationMethods, PrayerSettings},
+    types::{AsrMethod, LatitudeMethod, PrayerMethod},
 };
 
 use clap::Parser;
@@ -11,40 +11,58 @@ use serde::{Deserialize, Serialize};
 #[clap(author, version, about, long_about = None)]
 pub struct PrayerArguments {
     /// Latitude method
-    #[clap(short, long, arg_enum, default_value = "one-seventh")]
+    #[clap(long, arg_enum, default_value = "one-seventh")]
     latitude_method: LatitudeMethod,
 
     /// Source of Prayer calculation
-    #[clap(short, long, arg_enum, default_value = "mwl")]
-    prayer_method: PrayerCalculationMethod,
+    #[clap(long, arg_enum, default_value = "mwl")]
+    prayer_method: PrayerMethod,
 
     /// Asr time method
-    #[clap(short, long, arg_enum, default_value = "shafi")]
-    asr_method: AsrCalculationMethod,
+    #[clap(long, arg_enum, default_value = "shafi")]
+    asr_method: AsrMethod,
+
+    /// Country
+    #[clap(long, default_value = "uk")]
+    country: String,
+
+    /// City
+    #[clap(long, default_value = "bath")]
+    city: String,
 
     /// Get today's times
     #[clap(short, long)]
-    today_only: bool,
+    today: bool,
 
     /// Exports times to HTML file
-    #[clap(short, long)]
+    #[clap(long)]
     export: bool,
 
     /// Generate default CSS for HTML file
     /// If not set, generates template CSS for custom editing
-    #[clap(short, long)]
+    #[clap(long)]
     generate_css: bool,
 }
 
 impl PrayerArguments {
     /// Get prayer calculation settings
     pub fn settings(&self) -> PrayerSettings {
-        PrayerSettings::new(self.latitude_method, self.prayer_method, self.asr_method)
+        PrayerSettings::new(
+            CalculationMethods {
+                latitude: self.latitude_method,
+                prayer: self.prayer_method,
+                asr: self.asr_method,
+            },
+            Location {
+                country: self.country.clone(),
+                city: self.city.clone(),
+            },
+        )
     }
 
     /// Flag for selecting only today's prayer times
     pub fn is_today_only(&self) -> bool {
-        self.today_only
+        self.today
     }
 
     pub fn export_enabled(&self) -> bool {

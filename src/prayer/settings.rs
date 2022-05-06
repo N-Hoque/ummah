@@ -1,41 +1,48 @@
 use crate::{
     request_parser::query_builder::PrayerQueryBuilder,
-    types::{AsrCalculationMethod, LatitudeMethod, PrayerCalculationMethod},
+    types::{AsrMethod, LatitudeMethod, PrayerMethod},
 };
 
 use chrono::{Datelike, Local};
 use serde::{Deserialize, Serialize};
 
+#[derive(PartialEq, Eq, Serialize, Deserialize)]
+pub(crate) struct CalculationMethods {
+    pub(crate) latitude: LatitudeMethod,
+    pub(crate) prayer: PrayerMethod,
+    pub(crate) asr: AsrMethod,
+}
+
+#[derive(PartialEq, Eq, Serialize, Deserialize)]
+pub(crate) struct Location {
+    pub(crate) country: String,
+    pub(crate) city: String,
+}
+
 /// Settings for calculating prayer times and determining current month of prayers
 #[derive(PartialEq, Eq, Serialize, Deserialize)]
 pub struct PrayerSettings {
-    pub(crate) latitude_method: LatitudeMethod,
-    pub(crate) prayer_method: PrayerCalculationMethod,
-    pub(crate) asr_method: AsrCalculationMethod,
+    pub(crate) methods: CalculationMethods,
+    pub(crate) location: Location,
     current_month: u32,
 }
 
 impl PrayerSettings {
-    pub fn new(
-        latitude_method: LatitudeMethod,
-        prayer_method: PrayerCalculationMethod,
-        asr_method: AsrCalculationMethod,
-    ) -> Self {
+    pub(crate) fn new(methods: CalculationMethods, location: Location) -> Self {
         Self {
-            latitude_method,
-            prayer_method,
-            asr_method,
+            methods,
+            location,
             current_month: Local::now().month(),
         }
     }
 
     pub(crate) fn query(&self) -> String {
         PrayerQueryBuilder {
-            high_latitude_method: self.latitude_method,
-            prayer_calculation_method: self.prayer_method,
-            asr_calculation_method: self.asr_method,
+            high_latitude_method: self.methods.latitude,
+            prayer_calculation_method: self.methods.prayer,
+            asr_calculation_method: self.methods.asr,
             current_month: Local::now().naive_utc().date(),
         }
-        .build()
+        .build(&self.location.country, &self.location.city)
     }
 }

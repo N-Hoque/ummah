@@ -1,19 +1,19 @@
-use crate::types::{AsrCalculationMethod, LatitudeMethod, PrayerCalculationMethod};
+use crate::types::{AsrMethod, LatitudeMethod, PrayerMethod};
 
 use chrono::{Datelike, NaiveDate};
 use chrono_utilities::naive::DateTransitions;
 
-static LINK: &str = "https://www.salahtimes.com/uk/bath/csv";
+static LINK: &str = "https://www.salahtimes.com/";
 
 pub struct PrayerQueryBuilder {
     pub(crate) high_latitude_method: LatitudeMethod,
-    pub(crate) prayer_calculation_method: PrayerCalculationMethod,
-    pub(crate) asr_calculation_method: AsrCalculationMethod,
+    pub(crate) prayer_calculation_method: PrayerMethod,
+    pub(crate) asr_calculation_method: AsrMethod,
     pub(crate) current_month: NaiveDate,
 }
 
 impl PrayerQueryBuilder {
-    pub(crate) fn build(self) -> String {
+    pub(crate) fn build(self, country: &str, city: &str) -> String {
         let current_year = self.current_month.year();
         let current_month = self.current_month.month();
         let end_day = self.current_month.last_day_of_month();
@@ -22,8 +22,8 @@ impl PrayerQueryBuilder {
         let end_date = format!("{}-{}-{}", current_year, current_month, end_day);
 
         format!(
-        "{}?highlatitudemethod={}&prayercalculationmethod={}&asarcalculationmethod={}&start={}&end={}",
-        LINK,
+        "{}/{}/{}/csv?highlatitudemethod={}&prayercalculationmethod={}&asarcalculationmethod={}&start={}&end={}",
+        LINK, country, city,
         self.high_latitude_method as u8,
         self.prayer_calculation_method as u8,
         self.asr_calculation_method as u8,

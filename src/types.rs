@@ -41,7 +41,7 @@ pub enum LatitudeMethod {
 /// The organisation to base the calculations from
 #[allow(clippy::upper_case_acronyms)]
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Clone, Copy, ArgEnum)]
-pub enum PrayerCalculationMethod {
+pub enum PrayerMethod {
     /// Muslim World League
     MWL = 1,
     /// University of Islamic Sciences
@@ -52,7 +52,7 @@ pub enum PrayerCalculationMethod {
 
 /// The school of thought to follow for the afternoon prayer
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Clone, Copy, ArgEnum)]
-pub enum AsrCalculationMethod {
+pub enum AsrMethod {
     Shafi = 1,
     Hanafi,
 }

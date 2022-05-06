@@ -36,23 +36,36 @@ pub fn create_table_body(table: &mut html_builder::Node, month: &[Day]) -> Adhan
     let mut table_body = table.tbody();
     for day in month {
         let mut data_row = table_body.tr();
-        writeln!(data_row.td().attr("class='tg-baqh'"), "{}", day.date.format("%A, %d"))
-            .map_err(|x| AdhanError::Unknown(Box::new(x)))?;
+        writeln!(
+            data_row.td().attr("class='tg-baqh'"),
+            "{}",
+            day.date.format("%A, %d")
+        )
+        .map_err(|x| AdhanError::Unknown(Box::new(x)))?;
         for prayer in day.prayers {
             writeln!(
                 data_row.td().attr("class='tg-baqh'"),
                 "{}",
                 prayer.time.format("%k:%M")
-            ).map_err(|x| AdhanError::Unknown(Box::new(x)))?;
+            )
+            .map_err(|x| AdhanError::Unknown(Box::new(x)))?;
         }
     }
     Ok(())
 }
 
-pub fn create_table_header(table: &mut html_builder::Node, current_month: NaiveDate) -> AdhanResult<()> {
+pub fn create_table_header(
+    table: &mut html_builder::Node,
+    current_month: NaiveDate,
+) -> AdhanResult<()> {
     let mut table_header = table.thead();
     let mut header_row = table_header.tr();
-    writeln!(header_row.th().attr("class='tg-baqh'"), "{}", current_month.format("%b %Y")).map_err(|x| AdhanError::Unknown(Box::new(x)))?;
+    writeln!(
+        header_row.th().attr("class='tg-baqh'"),
+        "{}",
+        current_month.format("%b %Y")
+    )
+    .map_err(|x| AdhanError::Unknown(Box::new(x)))?;
     for elem in ["Fajr", "Dhuhr", "Asr", "Maghrib", "Isha"] {
         writeln!(header_row.th().attr("class='tg-baqh'"), "{}", elem)
             .map_err(|x| AdhanError::Unknown(Box::new(x)))?;
