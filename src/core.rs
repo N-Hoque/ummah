@@ -1,4 +1,4 @@
-pub(crate) mod fs;
+pub mod fs;
 pub(crate) mod request_handler;
 pub mod timetable_generator;
 

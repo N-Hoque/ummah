@@ -8,11 +8,19 @@ use std::{
     path::{Path, PathBuf},
 };
 
-pub fn open_file<P: AsRef<Path>>(path: P) -> AdhanResult<File> {
+pub fn get_user_filepath() -> PathBuf {
+    dirs_next::document_dir().map_or_else(|| "adhan".into(), |dir| dir.join("adhan"))
+}
+
+pub fn get_cache_filepath() -> PathBuf {
+    dirs_next::cache_dir().map_or_else(|| "adhan".into(), |dir| dir.join("adhan"))
+}
+
+pub(crate) fn open_file<P: AsRef<Path>>(path: P) -> AdhanResult<File> {
     File::open(path).map_err(AdhanError::IO)
 }
 
-pub fn write_file<P: AsRef<Path>>(dir: P, file: P, data: &[u8]) -> AdhanResult<()> {
+pub(crate) fn write_file<P: AsRef<Path>>(dir: P, file: P, data: &[u8]) -> AdhanResult<()> {
     create_dir(&dir)?;
 
     let path = dir.as_ref().join(file);
@@ -24,7 +32,7 @@ pub fn write_file<P: AsRef<Path>>(dir: P, file: P, data: &[u8]) -> AdhanResult<(
     file.write(data).map(|_| ()).map_err(AdhanError::IO)
 }
 
-pub fn write_serialized_file<P: AsRef<Path>, T: Serialize>(
+pub(crate) fn write_serialized_file<P: AsRef<Path>, T: Serialize>(
     dir: P,
     file: P,
     data: &T,
@@ -39,13 +47,7 @@ pub fn write_serialized_file<P: AsRef<Path>, T: Serialize>(
     serde_yaml::to_writer(&mut file, data).map_err(AdhanError::Serde)
 }
 
-pub fn get_user_filepath() -> PathBuf {
-    dirs_next::document_dir().map_or_else(|| "adhan".into(), |dir| dir.join("adhan"))
-}
 
-pub fn get_cache_filepath() -> PathBuf {
-    dirs_next::cache_dir().map_or_else(|| "adhan".into(), |dir| dir.join("adhan"))
-}
 
 fn create_dir<P: AsRef<Path>>(dir: P) -> AdhanResult<()> {
     if std::fs::read_dir(&dir).is_err() {
