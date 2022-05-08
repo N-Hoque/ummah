@@ -6,21 +6,21 @@ use serde::{Deserialize, Serialize};
 
 static LINK: &str = "https://www.salahtimes.com/";
 
-#[derive(Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub(crate) struct CalculationMethods {
     pub(crate) latitude: LatitudeMethod,
     pub(crate) prayer: PrayerMethod,
     pub(crate) asr: AsrMethod,
 }
 
-#[derive(Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub(crate) struct Location {
     pub(crate) country: String,
     pub(crate) city: String,
 }
 
 /// Settings for calculating prayer times and determining current month of prayers
-#[derive(Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct PrayerSettings {
     pub(crate) methods: CalculationMethods,
     pub(crate) location: Location,

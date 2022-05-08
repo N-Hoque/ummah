@@ -8,10 +8,7 @@ use self::{
 };
 
 use crate::{
-    day::Day,
-    prayer::settings::PrayerSettings,
-    request_parser::parse_csv_file,
-    types::AdhanResult,
+    day::Day, prayer::settings::PrayerSettings, request_parser::parse_csv_file, types::AdhanResult,
 };
 
 use bytes::Bytes;
@@ -84,27 +81,39 @@ pub fn try_get_today(month: &[Day]) -> Option<&Day> {
     today
 }
 
+pub fn clear_cache() -> AdhanResult<()> {
+    let (docs, cache) = (get_user_filepath(), get_cache_filepath());
+
+    std::fs::remove_dir_all(docs)?;
+    std::fs::remove_dir_all(cache)?;
+
+    Ok(())
+}
+
 fn check_settings(prayer_settings: &PrayerSettings) -> bool {
     let path = get_cache_filepath().join(CURRENT_SETTINGS);
     match open_file(path) {
         Err(_) => false,
         Ok(file) => match serde_yaml::from_reader::<_, PrayerSettings>(file) {
             Err(_) => false,
-            Ok(settings) => settings == *prayer_settings,
+            Ok(settings) => settings == prayer_settings.clone().with_audio_downloaded(),
         },
     }
 }
 
 fn load_data() -> Option<Vec<Day>> {
     let path = get_user_filepath().join(CURRENT_MONTH);
-    match open_file(path) {
-        Err(_) => None,
-        Ok(file) => serde_yaml::from_reader(file).ok(),
-    }
+    open_file(path)
+        .ok()
+        .and_then(|file| serde_yaml::from_reader(file).ok())
 }
 
 async fn request_times(prayer_settings: &PrayerSettings) -> AdhanResult<Vec<Day>> {
-    let timetable = download_file(prayer_settings.query(Local::now().date().naive_utc()), "Downloading times").await?;
+    let timetable = download_file(
+        prayer_settings.query(Local::now().date().naive_utc()),
+        "Downloading times",
+    )
+    .await?;
 
     let days = parse_csv_file(timetable)?;
 

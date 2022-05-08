@@ -1,6 +1,6 @@
 use adhan::{
     arguments::PrayerArguments,
-    core::{get_prayer_times, timetable_generator::TimetableGenerator, try_get_today},
+    core::{clear_cache, get_prayer_times, timetable_generator::TimetableGenerator, try_get_today},
     types::AdhanResult,
 };
 use clap::StructOpt;
@@ -8,6 +8,10 @@ use clap::StructOpt;
 #[tokio::main]
 async fn main() -> AdhanResult<()> {
     let args = PrayerArguments::parse();
+
+    if args.clear_cache() {
+        clear_cache()?;
+    }
 
     let month = get_prayer_times(&args.settings()).await?;
 

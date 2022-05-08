@@ -54,8 +54,6 @@ pub enum AsrMethod {
     Hanafi,
 }
 
-
-
 /// Represents all possible program errors
 #[derive(Debug, Error)]
 pub enum AdhanError {

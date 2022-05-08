@@ -42,6 +42,10 @@ pub struct PrayerArguments {
     /// If not set, generates template CSS for custom editing
     #[clap(long)]
     generate_css: bool,
+
+    /// Clear cache
+    #[clap(long)]
+    clear_cache: bool,
 }
 
 impl PrayerArguments {
@@ -58,6 +62,10 @@ impl PrayerArguments {
                 city: self.city.clone(),
             },
         )
+    }
+
+    pub fn clear_cache(&self) -> bool {
+        self.clear_cache
     }
 
     /// Flag for selecting only today's prayer times
