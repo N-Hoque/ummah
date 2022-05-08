@@ -1,6 +1,6 @@
 use crate::{
-    day::Day,
     prayer::Prayer,
+    time::{day::Day, month::Month},
     types::{AdhanError, AdhanResult, PrayerName},
 };
 
@@ -9,7 +9,7 @@ use serde::Deserialize;
 
 const MAX_DAYS: usize = 32;
 
-pub fn parse_csv_file(data: bytes::Bytes) -> AdhanResult<Vec<Day>> {
+pub fn parse_csv_file(data: bytes::Bytes) -> AdhanResult<Month> {
     let mut csv_reader = csv::Reader::from_reader(data.as_ref());
     let mut days = Vec::with_capacity(MAX_DAYS);
     for record in csv_reader.records() {
@@ -19,7 +19,7 @@ pub fn parse_csv_file(data: bytes::Bytes) -> AdhanResult<Vec<Day>> {
             .build()?;
         days.push(day);
     }
-    Ok(days)
+    Ok(Month::new(days))
 }
 
 #[derive(Debug, Deserialize)]

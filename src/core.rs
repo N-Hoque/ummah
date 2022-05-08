@@ -8,7 +8,8 @@ use self::{
 };
 
 use crate::{
-    day::Day, prayer::settings::PrayerSettings, request_parser::parse_csv_file, types::AdhanResult,
+    prayer::settings::PrayerSettings, request_parser::parse_csv_file, time::month::Month,
+    types::AdhanResult,
 };
 
 use bytes::Bytes;
@@ -44,41 +45,11 @@ static ADHAN_MP3_LINK: &str = "https://media.sd.ma/assabile/adhan_3435370/8c052a
 ///     Ok(())
 /// }
 /// ```
-pub async fn get_prayer_times(prayer_settings: &PrayerSettings) -> AdhanResult<Vec<Day>> {
+pub async fn get_prayer_times(prayer_settings: &PrayerSettings) -> AdhanResult<Month> {
     match (check_settings(prayer_settings), load_data()) {
         (true, Some(month)) => Ok(month),
         _ => request_times(prayer_settings).await,
     }
-}
-
-/// Show the prayer times for today
-///
-/// # Example
-/// ```
-/// use adhan::{
-///     core::{get_prayer_times, try_get_today},
-///     prayer::settings::PrayerSettings,
-///     types::{AdhanResult, LatitudeMethod, PrayerCalculationMethod, AsrCalculationMethod}
-/// };
-///
-/// async fn test() -> AdhanResult<()> {
-///     let settings = PrayerSettings::new(LatitudeMethod::OneSeventh, PrayerCalculationMethod::MWL, AsrCalculationMethod::Shafi);
-///     let month = get_prayer_times(&settings).await?;
-///     assert!(!month.is_empty());
-///
-///     let today = try_get_today(&month);
-///
-///     if let Some(today) = today {
-///         println!("{}", today);
-///     }
-///
-///     Ok(())
-/// }
-/// ```
-pub fn try_get_today(month: &[Day]) -> Option<&Day> {
-    let today = Local::now().date().naive_utc();
-    let today = month.iter().find(|day| day.get_date() == today);
-    today
 }
 
 pub fn clear_cache() -> AdhanResult<()> {
@@ -101,30 +72,30 @@ fn check_settings(prayer_settings: &PrayerSettings) -> bool {
     }
 }
 
-fn load_data() -> Option<Vec<Day>> {
+fn load_data() -> Option<Month> {
     let path = get_user_filepath().join(CURRENT_MONTH);
     open_file(path)
         .ok()
         .and_then(|file| serde_yaml::from_reader(file).ok())
 }
 
-async fn request_times(prayer_settings: &PrayerSettings) -> AdhanResult<Vec<Day>> {
+async fn request_times(prayer_settings: &PrayerSettings) -> AdhanResult<Month> {
     let timetable = download_file(
         prayer_settings.query(Local::now().date().naive_utc()),
         "Downloading times",
     )
     .await?;
 
-    let days = parse_csv_file(timetable)?;
+    let month = parse_csv_file(timetable)?;
 
     let audio = download_file(ADHAN_MP3_LINK, "Downloading adhan").await?;
 
-    cache_data(&days, audio, prayer_settings)?;
+    cache_data(&month, audio, prayer_settings)?;
 
-    Ok(days)
+    Ok(month)
 }
 
-fn cache_data(days: &Vec<Day>, audio: Bytes, prayer_settings: &PrayerSettings) -> AdhanResult<()> {
+fn cache_data(days: &Month, audio: Bytes, prayer_settings: &PrayerSettings) -> AdhanResult<()> {
     let (docs, cache) = (get_user_filepath(), get_cache_filepath());
     write_file(&docs, &PathBuf::from("adhan.mp3"), audio.as_ref())?;
     write_serialized_file(&docs, &PathBuf::from(CURRENT_MONTH), days)?;

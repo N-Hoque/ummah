@@ -1,5 +1,5 @@
 use crate::{
-    day::Day,
+    time::month::Month,
     types::{AdhanError, AdhanResult},
 };
 
@@ -22,7 +22,7 @@ impl TimetableGenerator {
     }
 
     /// Creates an HTML page for the prayer timetable
-    pub fn generate(&self, month: &[Day]) -> AdhanResult<()> {
+    pub fn generate(&self, month: &Month) -> AdhanResult<()> {
         let mut document = html_builder::Buffer::new();
 
         let mut html = document.html().attr("lang=en-gb");
@@ -49,13 +49,13 @@ impl TimetableGenerator {
         Ok(())
     }
 
-    fn create_table(html: &mut html_builder::Node, month: &[Day]) -> AdhanResult<()> {
+    fn create_table(html: &mut html_builder::Node, month: &Month) -> AdhanResult<()> {
         let mut body = html.body();
 
         writeln!(body.h1(), "Adhan").map_err(|x| AdhanError::Unknown(Box::new(x)))?;
 
         let mut table = body.table().attr("class='tg'");
-        TimetableGenerator::create_table_header(&mut table, month[0].get_date())?;
+        TimetableGenerator::create_table_header(&mut table, month.today().unwrap().date)?;
         TimetableGenerator::create_table_body(&mut table, month)?;
         Ok(())
     }
@@ -71,9 +71,9 @@ impl TimetableGenerator {
         Ok(())
     }
 
-    fn create_table_body(table: &mut html_builder::Node, month: &[Day]) -> AdhanResult<()> {
+    fn create_table_body(table: &mut html_builder::Node, month: &Month) -> AdhanResult<()> {
         let mut table_body = table.tbody();
-        for day in month {
+        for day in month.iter() {
             let mut data_row = table_body.tr();
             writeln!(
                 data_row.td().attr("class='tg-baqh'"),

@@ -19,7 +19,7 @@
 
 pub mod arguments;
 pub mod core;
-pub(crate) mod day;
 pub mod prayer;
 pub(crate) mod request_parser;
+pub mod time;
 pub mod types;
