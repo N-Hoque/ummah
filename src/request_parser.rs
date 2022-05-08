@@ -7,9 +7,11 @@ use crate::{
 use chrono::{Datelike, Duration, Local, NaiveDate, NaiveTime};
 use serde::Deserialize;
 
+const MAX_DAYS: usize = 32;
+
 pub fn parse_csv_file(data: bytes::Bytes) -> AdhanResult<Vec<Day>> {
     let mut csv_reader = csv::Reader::from_reader(data.as_ref());
-    let mut days = vec![];
+    let mut days = Vec::with_capacity(MAX_DAYS);
     for record in csv_reader.records() {
         let day = record
             .and_then(|x| x.deserialize::<'_, CSVPrayer>(None))
