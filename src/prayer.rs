@@ -30,4 +30,12 @@ impl Prayer {
     pub(crate) fn new(name: PrayerName, time: NaiveTime) -> Self {
         Self { name, time }
     }
+
+    pub fn get_name(&self) -> PrayerName {
+        self.name
+    }
+
+    pub fn get_time(&self) -> NaiveTime {
+        self.time
+    }
 }

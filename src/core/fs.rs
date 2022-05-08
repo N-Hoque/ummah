@@ -47,8 +47,6 @@ pub(crate) fn write_serialized_file<P: AsRef<Path>, T: Serialize>(
     serde_yaml::to_writer(&mut file, data).map_err(AdhanError::Serde)
 }
 
-
-
 fn create_dir<P: AsRef<Path>>(dir: P) -> AdhanResult<()> {
     if std::fs::read_dir(&dir).is_err() {
         std::fs::create_dir_all(dir).map_err(AdhanError::IO)?;

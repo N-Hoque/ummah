@@ -8,7 +8,7 @@ use std::{error, fmt, io};
 pub type AdhanResult<T> = Result<T, AdhanError>;
 
 #[derive(Debug, Serialize, Deserialize, Clone, Copy, PartialEq, Eq)]
-pub(crate) enum PrayerName {
+pub enum PrayerName {
     Fajr,
     Dhuhr,
     Asr,
