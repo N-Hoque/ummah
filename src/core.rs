@@ -9,7 +9,7 @@ use self::{
 use crate::{
     day::Day,
     prayer::settings::PrayerSettings,
-    request_parser::csv_parser::CSVPrayer,
+    request_parser::CSVPrayer,
     types::{AdhanError, AdhanResult},
 };
 
@@ -154,7 +154,7 @@ async fn from_csv(prayer_settings: &PrayerSettings) -> AdhanResult<Vec<Day>> {
 }
 
 async fn download_csv_file(prayer_settings: &PrayerSettings) -> AdhanResult<String> {
-    let response = reqwest::get(prayer_settings.query())
+    let response = reqwest::get(prayer_settings.query(Local::now().date().naive_local()))
         .await
         .map_err(|x| AdhanError::Unknown(Box::new(x)))?;
     let content = response

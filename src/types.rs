@@ -58,7 +58,7 @@ pub enum AsrMethod {
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, Copy, PartialEq, Eq)]
-pub(crate) enum Kind {
+pub(crate) enum PrayerName {
     Fajr,
     Dhuhr,
     Asr,
@@ -66,14 +66,14 @@ pub(crate) enum Kind {
     Isha,
 }
 
-impl fmt::Display for Kind {
+impl fmt::Display for PrayerName {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Kind::Fajr => write!(f, "Fajr"),
-            Kind::Dhuhr => write!(f, "Dhuhr"),
-            Kind::Asr => write!(f, "Asr"),
-            Kind::Maghrib => write!(f, "Maghrib"),
-            Kind::Isha => write!(f, "Isha"),
+            PrayerName::Fajr => write!(f, "Fajr"),
+            PrayerName::Dhuhr => write!(f, "Dhuhr"),
+            PrayerName::Asr => write!(f, "Asr"),
+            PrayerName::Maghrib => write!(f, "Maghrib"),
+            PrayerName::Isha => write!(f, "Isha"),
         }
     }
 }

@@ -1,10 +1,10 @@
-use crate::{
-    request_parser::query_builder::PrayerQueryBuilder,
-    types::{AsrMethod, LatitudeMethod, PrayerMethod},
-};
+use crate::types::{AsrMethod, LatitudeMethod, PrayerMethod};
 
-use chrono::{Datelike, Local};
+use chrono::{Datelike, Local, NaiveDate};
+use chrono_utilities::naive::DateTransitions;
 use serde::{Deserialize, Serialize};
+
+static LINK: &str = "https://www.salahtimes.com/";
 
 #[derive(PartialEq, Eq, Serialize, Deserialize)]
 pub(crate) struct CalculationMethods {
@@ -36,13 +36,22 @@ impl PrayerSettings {
         }
     }
 
-    pub(crate) fn query(&self) -> String {
-        PrayerQueryBuilder {
-            high_latitude_method: self.methods.latitude,
-            prayer_calculation_method: self.methods.prayer,
-            asr_calculation_method: self.methods.asr,
-            current_month: Local::now().naive_utc().date(),
-        }
-        .build(&self.location.country, &self.location.city)
+    pub(crate) fn query(&self, current_month: NaiveDate) -> String {
+        let end_day = current_month.last_day_of_month();
+        let current_year = current_month.year();
+        let current_month = current_month.month();
+
+        let start_date = format!("{}-{}-01", current_year, current_month);
+        let end_date = format!("{}-{}-{}", current_year, current_month, end_day);
+
+        format!(
+            "{}/{}/{}/csv?highlatitudemethod={}&prayercalculationmethod={}&asarcalculationmethod={}&start={}&end={}",
+            LINK, self.location.country, self.location.city,
+            self.methods.latitude as u8,
+            self.methods.prayer as u8,
+            self.methods.asr as u8,
+            start_date,
+            end_date
+        )
     }
 }

@@ -1,5 +1,5 @@
 use crate::{
-    prayer::settings::{Location, CalculationMethods, PrayerSettings},
+    prayer::settings::{CalculationMethods, Location, PrayerSettings},
     types::{AsrMethod, LatitudeMethod, PrayerMethod},
 };
 
