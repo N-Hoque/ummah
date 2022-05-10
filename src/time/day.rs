@@ -1,4 +1,6 @@
-use crate::prayer::Prayer;
+//! Module for holding a [Day] of [Prayers](super::prayer::Prayer)
+
+use crate::core::prayer::Prayer;
 
 use chrono::NaiveDate;
 use serde::{Deserialize, Serialize};
@@ -8,8 +10,8 @@ use std::{cmp::Ordering, fmt};
 /// Holds all prayers for a given day
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]
 pub struct Day {
-    pub(crate) date: NaiveDate,
-    pub(crate) prayers: [Prayer; 5],
+    date: NaiveDate,
+    prayers: [Prayer; 5],
 }
 
 impl fmt::Display for Day {
@@ -21,7 +23,7 @@ impl fmt::Display for Day {
         output += &format!("|{:=<62}|\n|", "");
 
         for (idx, prayer) in self.prayers.iter().enumerate() {
-            output += &format!("{:^10}", prayer.name.to_string());
+            output += &format!("{:^10}", prayer.get_name().to_string());
             if idx < 4 {
                 output += " | ";
             }
@@ -30,7 +32,7 @@ impl fmt::Display for Day {
         output += "|\n|";
 
         for (idx, prayer) in self.prayers.iter().enumerate() {
-            output += &format!("{:^10}", prayer.time.to_string());
+            output += &format!("{:^10}", prayer.get_time().to_string());
             if idx < 4 {
                 output += " | ";
             }
@@ -55,10 +57,28 @@ impl Ord for Day {
 }
 
 impl Day {
+    pub(crate) fn new(date: NaiveDate, prayers: [Prayer; 5]) -> Self {
+        Self { date, prayers }
+    }
+
+    /// Gets the next unperformed prayer
+    pub fn get_next_prayer(&self) -> Option<&Prayer> {
+        self.prayers.iter().find(|prayer| !prayer.is_performed())
+    }
+
+    /// Mutably gets the next unperformed prayer
+    pub fn get_next_prayer_mut(&mut self) -> Option<&mut Prayer> {
+        self.prayers
+            .iter_mut()
+            .find(|prayer| !prayer.is_performed())
+    }
+
+    /// Gets the date for the day
     pub fn get_date(&self) -> NaiveDate {
         self.date
     }
 
+    /// Gets all prayers for the day
     pub fn get_prayers(&self) -> [Prayer; 5] {
         self.prayers
     }

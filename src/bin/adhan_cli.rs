@@ -1,5 +1,5 @@
 use adhan::{
-    arguments::PrayerArguments,
+    argparser::arguments::PrayerArguments,
     core::{clear_cache, get_prayer_times, timetable_generator::TimetableGenerator},
     types::AdhanResult,
 };

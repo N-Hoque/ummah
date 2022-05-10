@@ -1,3 +1,5 @@
+//! Logic for generating timetable
+
 use crate::{
     time::month::Month,
     types::{AdhanError, AdhanResult},
@@ -55,7 +57,7 @@ impl TimetableGenerator {
         writeln!(body.h1(), "Adhan").map_err(|x| AdhanError::Unknown(Box::new(x)))?;
 
         let mut table = body.table().attr("class='tg'");
-        TimetableGenerator::create_table_header(&mut table, month.today().unwrap().date)?;
+        TimetableGenerator::create_table_header(&mut table, month.today().unwrap().get_date())?;
         TimetableGenerator::create_table_body(&mut table, month)?;
         Ok(())
     }
@@ -78,14 +80,14 @@ impl TimetableGenerator {
             writeln!(
                 data_row.td().attr("class='tg-baqh'"),
                 "{}",
-                day.date.format("%A, %d")
+                day.get_date().format("%A, %d")
             )
             .map_err(|x| AdhanError::Unknown(Box::new(x)))?;
-            for prayer in day.prayers {
+            for prayer in day.get_prayers() {
                 writeln!(
                     data_row.td().attr("class='tg-baqh'"),
                     "{}",
-                    prayer.time.format("%k:%M")
+                    prayer.get_time().format("%k:%M")
                 )
                 .map_err(|x| AdhanError::Unknown(Box::new(x)))?;
             }

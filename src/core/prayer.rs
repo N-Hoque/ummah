@@ -1,4 +1,4 @@
-pub mod settings;
+//! Module for holding [Prayer] struct
 
 use crate::types::PrayerName;
 
@@ -10,8 +10,9 @@ use std::fmt;
 /// Represents an individual prayer
 #[derive(Debug, Serialize, Deserialize, Clone, Copy, PartialEq, Eq)]
 pub struct Prayer {
-    pub(crate) name: PrayerName,
-    pub(crate) time: NaiveTime,
+    name: PrayerName,
+    time: NaiveTime,
+    performed: bool,
 }
 
 impl fmt::Display for Prayer {
@@ -28,13 +29,29 @@ impl fmt::Display for Prayer {
 
 impl Prayer {
     pub(crate) fn new(name: PrayerName, time: NaiveTime) -> Self {
-        Self { name, time }
+        Self {
+            name,
+            time,
+            performed: chrono::Local::now().time() >= time,
+        }
     }
 
+    /// Checks if the prayer has been performed
+    pub fn is_performed(&self) -> bool {
+        self.performed
+    }
+
+    /// Set the prayer as performed
+    pub fn set_performed(&mut self) {
+        self.performed = true;
+    }
+
+    /// Gets the prayer name
     pub fn get_name(&self) -> PrayerName {
         self.name
     }
 
+    /// Gets the prayer time
     pub fn get_time(&self) -> NaiveTime {
         self.time
     }

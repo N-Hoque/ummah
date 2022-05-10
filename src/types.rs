@@ -7,6 +7,9 @@ use std::{error, fmt, io};
 /// Wrapper around [Result]
 pub type AdhanResult<T> = Result<T, AdhanError>;
 
+/// Names for all the prayers
+///
+/// TODO: Add support for Taraweeh and Tahajjud.
 #[derive(Debug, Serialize, Deserialize, Clone, Copy, PartialEq, Eq)]
 pub enum PrayerName {
     Fajr,
@@ -57,9 +60,21 @@ pub enum AsrMethod {
 /// Represents all possible program errors
 #[derive(Debug, Error)]
 pub enum AdhanError {
-    /// Thrown when attempting to submit request to website
-    #[error("Failed to request times")]
-    Unknown(#[from] Box<dyn error::Error>),
+    /// Thrown when obtaining prayer time
+    #[error("Cannot get new time")]
+    Prayer,
+
+    /// Thrown when decoding audio file
+    #[error("Cannot decode audio")]
+    Decode(#[from] rodio::decoder::DecoderError),
+
+    /// Thrown when setting up audio streams
+    #[error("Cannot decode audio")]
+    Stream(#[from] rodio::StreamError),
+
+    /// Thrown when playing audio streams
+    #[error("Cannot play audio")]
+    Play(#[from] rodio::PlayError),
 
     /// Thrown when parsing CSV file
     #[error("Failed to read CSV file")]
@@ -76,4 +91,8 @@ pub enum AdhanError {
     /// Thrown on (de)serialization errors
     #[error("Failed to (de)serialize")]
     Serde(#[from] serde_yaml::Error),
+
+    /// Thrown when attempting to submit request to website
+    #[error("Failed to request times")]
+    Unknown(#[from] Box<dyn error::Error>),
 }

@@ -1,10 +1,9 @@
-use crate::{
-    prayer::settings::{CalculationMethods, Location, PrayerSettings},
-    types::{AsrMethod, LatitudeMethod, PrayerMethod},
-};
+use crate::types::{AsrMethod, LatitudeMethod, PrayerMethod};
 
 use clap::Parser;
 use serde::{Deserialize, Serialize};
+
+use super::settings::{CalculationMethods, Location, PrayerSettings};
 
 /// Gets prayer times from www.salahtimes.com/uk
 #[derive(Parser, Debug, PartialEq, Eq, Serialize, Deserialize)]
@@ -64,6 +63,7 @@ impl PrayerArguments {
         )
     }
 
+    /// Clears cache
     pub fn clear_cache(&self) -> bool {
         self.clear_cache
     }
@@ -73,10 +73,12 @@ impl PrayerArguments {
         self.today
     }
 
+    /// Flag for exporting timetable to HTML file
     pub fn export_enabled(&self) -> bool {
         self.export
     }
 
+    /// Flag for generating default CSS file for timetable
     pub fn generate_default_css(&self) -> bool {
         self.generate_css
     }

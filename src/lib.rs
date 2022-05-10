@@ -17,9 +17,8 @@
 //!
 //! Run `adhan -t` to get the times for today.
 
-pub mod arguments;
+pub mod argparser;
 pub mod core;
-pub mod prayer;
 pub(crate) mod request_parser;
 pub mod time;
 pub mod types;

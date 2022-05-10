@@ -1,5 +1,5 @@
 use crate::{
-    prayer::Prayer,
+    core::prayer::Prayer,
     time::{day::Day, month::Month},
     types::{AdhanError, AdhanResult, PrayerName},
 };
@@ -8,6 +8,9 @@ use chrono::{Datelike, Duration, Local, NaiveDate, NaiveTime};
 use serde::Deserialize;
 
 const MAX_DAYS: usize = 32;
+
+static DATE_FMT: &str = "%a %d %b %Y";
+static TIME_FMT: &str = "%k:%M";
 
 pub fn parse_csv_file(data: bytes::Bytes) -> AdhanResult<Month> {
     let mut csv_reader = csv::Reader::from_reader(data.as_ref());
@@ -23,7 +26,7 @@ pub fn parse_csv_file(data: bytes::Bytes) -> AdhanResult<Month> {
 }
 
 #[derive(Debug, Deserialize)]
-pub(crate) struct CSVPrayer {
+pub struct CSVPrayer {
     day: String,
     fajr: String,
     _s: String,
@@ -42,21 +45,18 @@ impl CSVPrayer {
         let isha = parse_prayer_time(&self.isha)?;
 
         let rhs = Duration::hours(12);
-        Ok(Day {
-            date: parse_prayer_date(self.day)?,
-            prayers: [
+        Ok(Day::new(
+            parse_prayer_date(self.day)?,
+            [
                 Prayer::new(PrayerName::Fajr, fajr),
                 Prayer::new(PrayerName::Dhuhr, dhuhr.overflowing_add_signed(rhs).0),
                 Prayer::new(PrayerName::Asr, asr.overflowing_add_signed(rhs).0),
                 Prayer::new(PrayerName::Maghrib, maghrib.overflowing_add_signed(rhs).0),
                 Prayer::new(PrayerName::Isha, isha.overflowing_add_signed(rhs).0),
             ],
-        })
+        ))
     }
 }
-
-static DATE_FMT: &str = "%a %d %b %Y";
-static TIME_FMT: &str = "%k:%M";
 
 fn parse_prayer_date(prayer_date: String) -> AdhanResult<NaiveDate> {
     let prayer_date = format!("{} {}", prayer_date, Local::now().year());

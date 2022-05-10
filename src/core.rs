@@ -1,4 +1,8 @@
+//! Core module for obtaining and caching timetable
+//! and other relevant files
+
 pub mod fs;
+pub mod prayer;
 pub(crate) mod request_handler;
 pub mod timetable_generator;
 
@@ -8,7 +12,9 @@ use self::{
 };
 
 use crate::{
-    prayer::settings::PrayerSettings, request_parser::parse_csv_file, time::month::Month,
+    argparser::settings::PrayerSettings,
+    request_parser::parse_csv_file,
+    time::{day::Day, month::Month},
     types::AdhanResult,
 };
 
@@ -52,6 +58,13 @@ pub async fn get_prayer_times(prayer_settings: &PrayerSettings) -> AdhanResult<M
     }
 }
 
+/// Deletes all cached data
+///
+/// NB: Cached data is stored in the documents and cache directories.
+/// This directory differs between OSes.
+///  
+/// - [Documents](https://docs.rs/dirs-next/2.0.0/dirs_next/fn.document_dir.html)
+/// - [Cache](https://docs.rs/dirs-next/2.0.0/dirs_next/fn.cache_dir.html)
 pub fn clear_cache() -> AdhanResult<()> {
     let (docs, cache) = (get_user_filepath(), get_cache_filepath());
 
@@ -59,6 +72,17 @@ pub fn clear_cache() -> AdhanResult<()> {
     std::fs::remove_dir_all(cache)?;
 
     Ok(())
+}
+
+/// Updates the timetable for a given day
+pub fn update_timetable(day: &Day) -> AdhanResult<()> {
+    let mut month = load_data().expect("Loading timetable");
+
+    month.update_day(day);
+
+    let docs = get_user_filepath();
+
+    write_serialized_file(&docs, &PathBuf::from(CURRENT_MONTH), &month)
 }
 
 fn check_settings(prayer_settings: &PrayerSettings) -> bool {
