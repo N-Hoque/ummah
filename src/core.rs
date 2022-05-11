@@ -98,9 +98,15 @@ fn check_settings(prayer_settings: &PrayerSettings) -> bool {
 
 fn load_data() -> Option<Month> {
     let path = get_user_filepath().join(CURRENT_MONTH);
-    open_file(path)
+    let data = open_file(path)
         .ok()
-        .and_then(|file| serde_yaml::from_reader(file).ok())
+        .and_then(|file| serde_yaml::from_reader::<_, Month>(file).ok());
+    if let Some(mut data) = data {
+        data.reload();
+        Some(data)
+    } else {
+        None
+    }
 }
 
 async fn request_times(prayer_settings: &PrayerSettings) -> AdhanResult<Month> {

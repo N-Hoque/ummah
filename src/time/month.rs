@@ -18,6 +18,14 @@ impl Month {
         self.0.iter()
     }
 
+    pub fn reload(&mut self) {
+        for current_day in self.0.iter_mut() {
+            for prayer in current_day.get_prayers().iter_mut() {
+                prayer.set_performed();
+            }
+        }
+    }
+
     pub fn update_day(&mut self, day: &Day) {
         for current_day in self.0.iter_mut() {
             if day.get_date() == current_day.get_date() {

@@ -43,7 +43,7 @@ impl Prayer {
 
     /// Set the prayer as performed
     pub fn set_performed(&mut self) {
-        self.performed = true;
+        self.performed = chrono::Local::now().time() >= self.time;
     }
 
     /// Gets the prayer name
