@@ -19,7 +19,7 @@ use crate::{
 };
 
 use bytes::Bytes;
-use chrono::Local;
+use chrono::{Datelike, Local};
 
 use std::path::PathBuf;
 
@@ -51,10 +51,14 @@ static ADHAN_MP3_LINK: &str = "https://media.sd.ma/assabile/adhan_3435370/8c052a
 ///     Ok(())
 /// }
 /// ```
-pub async fn get_prayer_times(prayer_settings: &PrayerSettings) -> AdhanResult<Month> {
-    match (check_settings(prayer_settings), load_data()) {
-        (true, Some(month)) => Ok(month),
-        _ => request_times(prayer_settings).await,
+pub async fn get_prayer_times(
+    prayer_settings: &PrayerSettings,
+    custom_month: Option<u32>,
+) -> AdhanResult<Month> {
+    match (check_settings(prayer_settings), load_data(), custom_month) {
+        (_, _, Some(custom_month)) => request_times(prayer_settings, custom_month).await,
+        (true, Some(month), _) => Ok(month),
+        _ => request_times_now(prayer_settings).await,
     }
 }
 
@@ -109,9 +113,25 @@ fn load_data() -> Option<Month> {
     }
 }
 
-async fn request_times(prayer_settings: &PrayerSettings) -> AdhanResult<Month> {
+async fn request_times_now(prayer_settings: &PrayerSettings) -> AdhanResult<Month> {
     let timetable = download_file(
         prayer_settings.query(Local::now().date().naive_utc()),
+        "Downloading times",
+    )
+    .await?;
+
+    let month = parse_csv_file(timetable)?;
+
+    let audio = download_file(ADHAN_MP3_LINK, "Downloading adhan").await?;
+
+    cache_data(&month, audio, prayer_settings)?;
+
+    Ok(month)
+}
+
+async fn request_times(prayer_settings: &PrayerSettings, month: u32) -> AdhanResult<Month> {
+    let timetable = download_file(
+        prayer_settings.query(chrono::NaiveDate::from_ymd(Local::now().year(), month, 1)),
         "Downloading times",
     )
     .await?;

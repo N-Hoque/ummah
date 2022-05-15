@@ -21,6 +21,10 @@ pub struct PrayerArguments {
     #[clap(long, arg_enum, default_value = "shafi")]
     asr_method: AsrMethod,
 
+    /// The month to pull the timetable from
+    #[clap(long)]
+    month: Option<u32>,
+
     /// Country
     #[clap(long, default_value = "uk")]
     country: String,
@@ -81,5 +85,9 @@ impl PrayerArguments {
     /// Flag for generating default CSS file for timetable
     pub fn generate_default_css(&self) -> bool {
         self.generate_css
+    }
+
+    pub fn month(&self) -> Option<u32> {
+        self.month
     }
 }

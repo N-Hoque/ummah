@@ -5,7 +5,7 @@ use crate::{
     types::{AdhanError, AdhanResult},
 };
 
-use chrono::NaiveDate;
+use chrono::{NaiveDate, Datelike};
 use html_builder::Html5;
 
 use std::{fmt::Write, path::PathBuf};
@@ -16,11 +16,12 @@ static CURRENT_HTML: &str = "current_month.html";
 
 pub struct TimetableGenerator {
     generate_css: bool,
+    custom_month: Option<u32>
 }
 
 impl TimetableGenerator {
-    pub fn new(generate_css: bool) -> Self {
-        Self { generate_css }
+    pub fn new(generate_css: bool, custom_month: Option<u32>) -> Self {
+        Self { generate_css, custom_month }
     }
 
     /// Creates an HTML page for the prayer timetable
@@ -30,7 +31,7 @@ impl TimetableGenerator {
         let mut html = document.html().attr("lang=en-gb");
 
         TimetableGenerator::create_title(&mut html)?;
-        TimetableGenerator::create_table(&mut html, month)?;
+        self.create_table(&mut html, month)?;
 
         let final_document = document.finish();
 
@@ -51,13 +52,13 @@ impl TimetableGenerator {
         Ok(())
     }
 
-    fn create_table(html: &mut html_builder::Node, month: &Month) -> AdhanResult<()> {
+    fn create_table(&self, html: &mut html_builder::Node, month: &Month) -> AdhanResult<()> {
         let mut body = html.body();
 
         writeln!(body.h1(), "Adhan").map_err(|x| AdhanError::Unknown(Box::new(x)))?;
 
         let mut table = body.table().attr("class='tg'");
-        TimetableGenerator::create_table_header(&mut table, month.today().unwrap().get_date())?;
+        TimetableGenerator::create_table_header(&mut table, if let Some(month) = self.custom_month { chrono::NaiveDate::from_ymd(chrono::Local::now().year(), month, 1) } else {month.today().unwrap().get_date()})?;
         TimetableGenerator::create_table_body(&mut table, month)?;
         Ok(())
     }

@@ -1,5 +1,5 @@
 use adhan::{
-    core::{clear_cache, update_timetable},
+    core::{clear_cache, get_prayer_times, update_timetable},
     types::{AdhanError, AdhanResult, PrayerName},
 };
 use clap::StructOpt;
@@ -58,7 +58,9 @@ async fn main() -> AdhanResult<()> {
         clear_cache()?;
     }
 
-    let mut month = adhan::core::get_prayer_times(&args.settings()).await?;
+    let settings = args.settings();
+
+    let mut month = get_prayer_times(&settings, args.month()).await?;
 
     let times_today = month.today_mut().expect("Getting today's times");
 

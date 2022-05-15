@@ -55,13 +55,13 @@ impl PrayerSettings {
         let end_date = format!("{}-{}-{}", current_year, current_month, end_day);
 
         format!(
-        "{}/{}/{}/csv?highlatitudemethod={}&prayercalculationmethod={}&asarcalculationmethod={}&start={}&end={}",
-        LINK, self.location.country, self.location.city,
-        self.methods.latitude as u8,
-        self.methods.prayer as u8,
-        self.methods.asr as u8,
-        start_date,
-        end_date
-    )
+            "{}/{}/{}/csv?highlatitudemethod={}&prayercalculationmethod={}&asarcalculationmethod={}&start={}&end={}",
+            LINK, self.location.country, self.location.city,
+            self.methods.latitude as u8,
+            self.methods.prayer as u8,
+            self.methods.asr as u8,
+            start_date,
+            end_date
+        )
     }
 }
