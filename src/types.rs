@@ -5,7 +5,7 @@ use thiserror::Error;
 use std::{error, fmt, io};
 
 /// Wrapper around [Result]
-pub type AdhanResult<T> = Result<T, AdhanError>;
+pub type UmmahResult<T> = Result<T, UmmahError>;
 
 /// Names for all the prayers
 ///
@@ -59,22 +59,10 @@ pub enum AsrMethod {
 
 /// Represents all possible program errors
 #[derive(Debug, Error)]
-pub enum AdhanError {
+pub enum UmmahError {
     /// Thrown when obtaining prayer time
     #[error("Cannot get new time")]
     Prayer,
-
-    /// Thrown when decoding audio file
-    #[error("Cannot decode audio")]
-    Decode(#[from] rodio::decoder::DecoderError),
-
-    /// Thrown when setting up audio streams
-    #[error("Cannot decode audio")]
-    Stream(#[from] rodio::StreamError),
-
-    /// Thrown when playing audio streams
-    #[error("Cannot play audio")]
-    Play(#[from] rodio::PlayError),
 
     /// Thrown when parsing CSV file
     #[error("Failed to read CSV file")]

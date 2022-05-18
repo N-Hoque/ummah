@@ -7,7 +7,7 @@ pub(crate) mod request_handler;
 pub mod timetable_generator;
 
 use self::{
-    fs::{get_cache_filepath, get_user_filepath, open_file, write_file, write_serialized_file},
+    fs::{get_cache_filepath, get_user_filepath, open_file, write_serialized_file},
     request_handler::download_file,
 };
 
@@ -15,10 +15,9 @@ use crate::{
     argparser::settings::PrayerSettings,
     request_parser::parse_csv_file,
     time::{day::Day, month::Month},
-    types::AdhanResult,
+    types::UmmahResult,
 };
 
-use bytes::Bytes;
 use chrono::{Datelike, Local};
 
 use std::path::PathBuf;
@@ -26,19 +25,18 @@ use std::path::PathBuf;
 static CURRENT_MONTH: &str = "current_month.yaml";
 static CURRENT_SETTINGS: &str = ".current_settings.yaml";
 
-static ADHAN_MP3_LINK: &str = "https://media.sd.ma/assabile/adhan_3435370/8c052a5edec1.mp3";
 
 /// Collect all prayer times for the current month
 ///
 /// # Example
 /// ```
-/// use adhan::{
+/// use ummah::{
 ///     core::{get_prayer_times, try_get_today},
 ///     prayer::settings::PrayerSettings,
-///     types::{AdhanResult, LatitudeMethod, PrayerCalculationMethod, AsrCalculationMethod}
+///     types::{UmmahResult, LatitudeMethod, PrayerCalculationMethod, AsrCalculationMethod}
 /// };
 ///
-/// async fn test() -> AdhanResult<()> {
+/// async fn test() -> UmmahResult<()> {
 ///     let settings = PrayerSettings::new(LatitudeMethod::OneSeventh, PrayerCalculationMethod::MWL, AsrCalculationMethod::Shafi);
 ///     let month = get_prayer_times(&settings).await?;
 ///     assert!(!month.is_empty());
@@ -54,7 +52,7 @@ static ADHAN_MP3_LINK: &str = "https://media.sd.ma/assabile/adhan_3435370/8c052a
 pub async fn get_prayer_times(
     prayer_settings: &PrayerSettings,
     custom_month: Option<u32>,
-) -> AdhanResult<Month> {
+) -> UmmahResult<Month> {
     match (check_settings(prayer_settings), load_data(), custom_month) {
         (_, _, Some(custom_month)) => request_times(prayer_settings, custom_month).await,
         (true, Some(month), _) => Ok(month),
@@ -69,7 +67,7 @@ pub async fn get_prayer_times(
 ///  
 /// - [Documents](https://docs.rs/dirs-next/2.0.0/dirs_next/fn.document_dir.html)
 /// - [Cache](https://docs.rs/dirs-next/2.0.0/dirs_next/fn.cache_dir.html)
-pub fn clear_cache() -> AdhanResult<()> {
+pub fn clear_cache() -> UmmahResult<()> {
     let (docs, cache) = (get_user_filepath(), get_cache_filepath());
 
     std::fs::remove_dir_all(docs)?;
@@ -79,7 +77,7 @@ pub fn clear_cache() -> AdhanResult<()> {
 }
 
 /// Updates the timetable for a given day
-pub fn update_timetable(day: &Day) -> AdhanResult<()> {
+pub fn update_timetable(day: &Day) -> UmmahResult<()> {
     let mut month = load_data().expect("Loading timetable");
 
     month.update_day(day);
@@ -113,7 +111,7 @@ fn load_data() -> Option<Month> {
     }
 }
 
-async fn request_times_now(prayer_settings: &PrayerSettings) -> AdhanResult<Month> {
+async fn request_times_now(prayer_settings: &PrayerSettings) -> UmmahResult<Month> {
     let timetable = download_file(
         prayer_settings.query(Local::now().date().naive_utc()),
         "Downloading times",
@@ -122,14 +120,12 @@ async fn request_times_now(prayer_settings: &PrayerSettings) -> AdhanResult<Mont
 
     let month = parse_csv_file(timetable)?;
 
-    let audio = download_file(ADHAN_MP3_LINK, "Downloading adhan").await?;
-
-    cache_data(&month, audio, prayer_settings)?;
+    cache_data(&month, prayer_settings)?;
 
     Ok(month)
 }
 
-async fn request_times(prayer_settings: &PrayerSettings, month: u32) -> AdhanResult<Month> {
+async fn request_times(prayer_settings: &PrayerSettings, month: u32) -> UmmahResult<Month> {
     let timetable = download_file(
         prayer_settings.query(chrono::NaiveDate::from_ymd(Local::now().year(), month, 1)),
         "Downloading times",
@@ -138,16 +134,13 @@ async fn request_times(prayer_settings: &PrayerSettings, month: u32) -> AdhanRes
 
     let month = parse_csv_file(timetable)?;
 
-    let audio = download_file(ADHAN_MP3_LINK, "Downloading adhan").await?;
-
-    cache_data(&month, audio, prayer_settings)?;
+    cache_data(&month, prayer_settings)?;
 
     Ok(month)
 }
 
-fn cache_data(days: &Month, audio: Bytes, prayer_settings: &PrayerSettings) -> AdhanResult<()> {
+fn cache_data(days: &Month, prayer_settings: &PrayerSettings) -> UmmahResult<()> {
     let (docs, cache) = (get_user_filepath(), get_cache_filepath());
-    write_file(&docs, &PathBuf::from("adhan.mp3"), audio.as_ref())?;
     write_serialized_file(&docs, &PathBuf::from(CURRENT_MONTH), days)?;
     write_serialized_file(
         &cache,

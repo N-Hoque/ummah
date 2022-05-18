@@ -2,7 +2,7 @@
 
 use crate::{
     time::month::Month,
-    types::{AdhanError, AdhanResult},
+    types::{UmmahError, UmmahResult},
 };
 
 use chrono::{NaiveDate, Datelike};
@@ -25,7 +25,7 @@ impl TimetableGenerator {
     }
 
     /// Creates an HTML page for the prayer timetable
-    pub fn generate(&self, month: &Month) -> AdhanResult<()> {
+    pub fn generate(&self, month: &Month) -> UmmahResult<()> {
         let mut document = html_builder::Buffer::new();
 
         let mut html = document.html().attr("lang=en-gb");
@@ -52,10 +52,10 @@ impl TimetableGenerator {
         Ok(())
     }
 
-    fn create_table(&self, html: &mut html_builder::Node, month: &Month) -> AdhanResult<()> {
+    fn create_table(&self, html: &mut html_builder::Node, month: &Month) -> UmmahResult<()> {
         let mut body = html.body();
 
-        writeln!(body.h1(), "Adhan").map_err(|x| AdhanError::Unknown(Box::new(x)))?;
+        writeln!(body.h1(), "Adhan").map_err(|x| UmmahError::Unknown(Box::new(x)))?;
 
         let mut table = body.table().attr("class='tg'");
         TimetableGenerator::create_table_header(&mut table, if let Some(month) = self.custom_month { chrono::NaiveDate::from_ymd(chrono::Local::now().year(), month, 1) } else {month.today().unwrap().get_date()})?;
@@ -63,18 +63,18 @@ impl TimetableGenerator {
         Ok(())
     }
 
-    fn create_title(html: &mut html_builder::Node) -> AdhanResult<()> {
+    fn create_title(html: &mut html_builder::Node) -> UmmahResult<()> {
         let mut head = html.head();
         let _ = head
             .link()
             .attr("rel='stylesheet'")
             .attr("href='current_month.css'");
         writeln!(head.title(), "Adhan - Prayer Time Collector")
-            .map_err(|x| AdhanError::Unknown(Box::new(x)))?;
+            .map_err(|x| UmmahError::Unknown(Box::new(x)))?;
         Ok(())
     }
 
-    fn create_table_body(table: &mut html_builder::Node, month: &Month) -> AdhanResult<()> {
+    fn create_table_body(table: &mut html_builder::Node, month: &Month) -> UmmahResult<()> {
         let mut table_body = table.tbody();
         for day in month.iter() {
             let mut data_row = table_body.tr();
@@ -83,14 +83,14 @@ impl TimetableGenerator {
                 "{}",
                 day.get_date().format("%A, %d")
             )
-            .map_err(|x| AdhanError::Unknown(Box::new(x)))?;
+            .map_err(|x| UmmahError::Unknown(Box::new(x)))?;
             for prayer in day.get_prayers() {
                 writeln!(
                     data_row.td().attr("class='tg-baqh'"),
                     "{}",
                     prayer.get_time().format("%k:%M")
                 )
-                .map_err(|x| AdhanError::Unknown(Box::new(x)))?;
+                .map_err(|x| UmmahError::Unknown(Box::new(x)))?;
             }
         }
         Ok(())
@@ -99,7 +99,7 @@ impl TimetableGenerator {
     fn create_table_header(
         table: &mut html_builder::Node,
         current_month: NaiveDate,
-    ) -> AdhanResult<()> {
+    ) -> UmmahResult<()> {
         let mut table_header = table.thead();
         let mut header_row = table_header.tr();
         writeln!(
@@ -107,15 +107,15 @@ impl TimetableGenerator {
             "{}",
             current_month.format("%b %Y")
         )
-        .map_err(|x| AdhanError::Unknown(Box::new(x)))?;
+        .map_err(|x| UmmahError::Unknown(Box::new(x)))?;
         for elem in ["Fajr", "Dhuhr", "Asr", "Maghrib", "Isha"] {
             writeln!(header_row.th().attr("class='tg-baqh'"), "{}", elem)
-                .map_err(|x| AdhanError::Unknown(Box::new(x)))?;
+                .map_err(|x| UmmahError::Unknown(Box::new(x)))?;
         }
         Ok(())
     }
 
-    fn generate_default_css() -> AdhanResult<()> {
+    fn generate_default_css() -> UmmahResult<()> {
         let css = r#"
     h1 {font-family:Arial, sans-serif;text-align:center;}
 .tg {border-collapse:collapse;border-color:#9ABAD9;border-spacing:0;width:100%}
@@ -133,7 +133,7 @@ impl TimetableGenerator {
         )
     }
 
-    fn generate_template_css() -> AdhanResult<()> {
+    fn generate_template_css() -> UmmahResult<()> {
         println!("Create your own CSS or modify the template at the following path:");
 
         let css = r#"

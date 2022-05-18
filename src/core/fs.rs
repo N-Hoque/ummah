@@ -1,6 +1,6 @@
 //! Helper module for file IO
 
-use crate::types::{AdhanError, AdhanResult};
+use crate::types::{UmmahError, UmmahResult};
 
 use serde::Serialize;
 
@@ -24,40 +24,40 @@ pub fn get_cache_filepath() -> PathBuf {
     dirs_next::cache_dir().map_or_else(|| "adhan".into(), |dir| dir.join("adhan"))
 }
 
-pub(crate) fn open_file<P: AsRef<Path>>(path: P) -> AdhanResult<File> {
-    File::open(path).map_err(AdhanError::IO)
+pub(crate) fn open_file<P: AsRef<Path>>(path: P) -> UmmahResult<File> {
+    File::open(path).map_err(UmmahError::IO)
 }
 
-pub(crate) fn write_file<P: AsRef<Path>>(dir: P, file: P, data: &[u8]) -> AdhanResult<()> {
+pub(crate) fn write_file<P: AsRef<Path>>(dir: P, file: P, data: &[u8]) -> UmmahResult<()> {
     create_dir(&dir)?;
 
     let path = dir.as_ref().join(file);
 
     println!("Writing file to {:?}", path);
 
-    let mut file = File::create(path).map_err(AdhanError::IO)?;
+    let mut file = File::create(path).map_err(UmmahError::IO)?;
 
-    file.write(data).map(|_| ()).map_err(AdhanError::IO)
+    file.write(data).map(|_| ()).map_err(UmmahError::IO)
 }
 
 pub(crate) fn write_serialized_file<P: AsRef<Path>, T: Serialize>(
     dir: P,
     file: P,
     data: &T,
-) -> AdhanResult<()> {
+) -> UmmahResult<()> {
     create_dir(&dir)?;
 
     let path = dir.as_ref().join(file);
 
     println!("Serializing data to {:?}", path);
 
-    let mut file = File::create(path).map_err(AdhanError::IO)?;
-    serde_yaml::to_writer(&mut file, data).map_err(AdhanError::Serde)
+    let mut file = File::create(path).map_err(UmmahError::IO)?;
+    serde_yaml::to_writer(&mut file, data).map_err(UmmahError::Serde)
 }
 
-fn create_dir<P: AsRef<Path>>(dir: P) -> AdhanResult<()> {
+fn create_dir<P: AsRef<Path>>(dir: P) -> UmmahResult<()> {
     if std::fs::read_dir(&dir).is_err() {
-        std::fs::create_dir_all(dir).map_err(AdhanError::IO)?;
+        std::fs::create_dir_all(dir).map_err(UmmahError::IO)?;
     };
     Ok(())
 }
