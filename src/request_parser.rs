@@ -38,31 +38,71 @@ pub struct CSVPrayer {
 
 impl CSVPrayer {
     pub fn build(self) -> UmmahResult<Day> {
-        let fajr = parse_prayer_time(&self.fajr)?;
-        let dhuhr = parse_prayer_time(&self.dhuhr)?;
-        let asr = parse_prayer_time(&self.asr)?;
-        let maghrib = parse_prayer_time(&self.maghrib)?;
-        let isha = parse_prayer_time(&self.isha)?;
-
         let rhs = Duration::hours(12);
-        Ok(Day::new(
-            parse_prayer_date(self.day)?,
+
+        let date = parse_prayer_date(&self.day)?;
+
+        let fajr = parse_prayer_time(&self.fajr, None)?;
+        let dhuhr = parse_prayer_time(&self.dhuhr, Some(rhs))?;
+        let asr = parse_prayer_time(&self.asr, Some(rhs))?;
+        let maghrib = parse_prayer_time(&self.maghrib, Some(rhs))?;
+        let isha = parse_prayer_time(&self.isha, Some(rhs))?;
+
+        let day = Day::new(
+            date,
             [
-                Prayer::new(PrayerName::Fajr, fajr),
-                Prayer::new(PrayerName::Dhuhr, dhuhr.overflowing_add_signed(rhs).0),
-                Prayer::new(PrayerName::Asr, asr.overflowing_add_signed(rhs).0),
-                Prayer::new(PrayerName::Maghrib, maghrib.overflowing_add_signed(rhs).0),
-                Prayer::new(PrayerName::Isha, isha.overflowing_add_signed(rhs).0),
+                Prayer::new(
+                    PrayerName::Fajr,
+                    fajr,
+                    self.get_performed_status(date, fajr),
+                ),
+                Prayer::new(
+                    PrayerName::Dhuhr,
+                    dhuhr,
+                    self.get_performed_status(date, dhuhr),
+                ),
+                Prayer::new(PrayerName::Asr, asr, self.get_performed_status(date, asr)),
+                Prayer::new(
+                    PrayerName::Maghrib,
+                    maghrib,
+                    self.get_performed_status(date, maghrib),
+                ),
+                Prayer::new(
+                    PrayerName::Isha,
+                    isha,
+                    self.get_performed_status(date, isha),
+                ),
             ],
-        ))
+        );
+
+        Ok(day)
+    }
+
+    fn get_performed_status(&self, date: NaiveDate, prayer_time: NaiveTime) -> bool {
+        let current_datetime = Local::now();
+        let current_date = current_datetime.date().naive_local();
+        let current_time = current_datetime.time();
+
+        match date.cmp(&current_date) {
+            std::cmp::Ordering::Greater => false,
+            std::cmp::Ordering::Less => true,
+            std::cmp::Ordering::Equal => prayer_time <= current_time,
+        }
     }
 }
 
-fn parse_prayer_date(prayer_date: String) -> UmmahResult<NaiveDate> {
+fn parse_prayer_date(prayer_date: &str) -> UmmahResult<NaiveDate> {
     let prayer_date = format!("{} {}", prayer_date, Local::now().year());
     NaiveDate::parse_from_str(&prayer_date, DATE_FMT).map_err(UmmahError::DateTime)
 }
 
-fn parse_prayer_time(prayer_time: &str) -> UmmahResult<NaiveTime> {
-    NaiveTime::parse_from_str(prayer_time, TIME_FMT).map_err(UmmahError::DateTime)
+fn parse_prayer_time(prayer_time: &str, with_retime: Option<Duration>) -> UmmahResult<NaiveTime> {
+    let mut time =
+        NaiveTime::parse_from_str(prayer_time, TIME_FMT).map_err(UmmahError::DateTime)?;
+
+    if let Some(retime) = with_retime {
+        time = time.overflowing_add_signed(retime).0;
+    }
+
+    Ok(time)
 }

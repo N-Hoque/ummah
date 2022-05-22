@@ -49,11 +49,11 @@ impl Prayer {
         self.time
     }
 
-    pub(crate) fn new(name: PrayerName, time: NaiveTime) -> Self {
+    pub(crate) fn new(name: PrayerName, time: NaiveTime, performed: bool) -> Self {
         Self {
             name,
             time,
-            performed: false,
+            performed,
         }
     }
 }
