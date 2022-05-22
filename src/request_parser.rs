@@ -1,5 +1,5 @@
 use crate::{
-    core::prayer::Prayer,
+    core::{get_performed_status, prayer::Prayer},
     time::{day::Day, month::Month},
     types::{PrayerName, UmmahError, UmmahResult},
 };
@@ -51,43 +51,19 @@ impl CSVPrayer {
         let day = Day::new(
             date,
             [
-                Prayer::new(
-                    PrayerName::Fajr,
-                    fajr,
-                    self.get_performed_status(date, fajr),
-                ),
-                Prayer::new(
-                    PrayerName::Dhuhr,
-                    dhuhr,
-                    self.get_performed_status(date, dhuhr),
-                ),
-                Prayer::new(PrayerName::Asr, asr, self.get_performed_status(date, asr)),
+                Prayer::new(PrayerName::Fajr, fajr, get_performed_status(date, fajr)),
+                Prayer::new(PrayerName::Dhuhr, dhuhr, get_performed_status(date, dhuhr)),
+                Prayer::new(PrayerName::Asr, asr, get_performed_status(date, asr)),
                 Prayer::new(
                     PrayerName::Maghrib,
                     maghrib,
-                    self.get_performed_status(date, maghrib),
+                    get_performed_status(date, maghrib),
                 ),
-                Prayer::new(
-                    PrayerName::Isha,
-                    isha,
-                    self.get_performed_status(date, isha),
-                ),
+                Prayer::new(PrayerName::Isha, isha, get_performed_status(date, isha)),
             ],
         );
 
         Ok(day)
-    }
-
-    fn get_performed_status(&self, date: NaiveDate, prayer_time: NaiveTime) -> bool {
-        let current_datetime = Local::now();
-        let current_date = current_datetime.date().naive_local();
-        let current_time = current_datetime.time();
-
-        match date.cmp(&current_date) {
-            std::cmp::Ordering::Greater => false,
-            std::cmp::Ordering::Less => true,
-            std::cmp::Ordering::Equal => prayer_time <= current_time,
-        }
     }
 }
 

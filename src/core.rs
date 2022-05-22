@@ -86,6 +86,18 @@ pub fn update_timetable(day: &Day) -> UmmahResult<()> {
     write_serialized_file(&docs, &PathBuf::from(CURRENT_MONTH), &month)
 }
 
+pub fn get_performed_status(date: chrono::NaiveDate, prayer_time: chrono::NaiveTime) -> bool {
+    let current_datetime = Local::now();
+    let current_date = current_datetime.date().naive_local();
+    let current_time = current_datetime.time();
+
+    match date.cmp(&current_date) {
+        std::cmp::Ordering::Less => true,
+        std::cmp::Ordering::Greater => false,
+        std::cmp::Ordering::Equal => prayer_time <= current_time,
+    }
+}
+
 fn check_settings(prayer_settings: &PrayerSettings) -> bool {
     let path = get_cache_filepath().join(CURRENT_SETTINGS);
     match open_file(path) {

@@ -12,7 +12,7 @@ use std::fmt;
 pub struct Prayer {
     name: PrayerName,
     time: NaiveTime,
-    #[serde(skip_deserializing)]
+    #[serde(skip)]
     performed: bool,
 }
 
