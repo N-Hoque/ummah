@@ -1,7 +1,7 @@
 use crate::{
     core::prayer::Prayer,
     time::{day::Day, month::Month},
-    types::{UmmahError, UmmahResult, PrayerName},
+    types::{PrayerName, UmmahError, UmmahResult},
 };
 
 use chrono::{Datelike, Duration, Local, NaiveDate, NaiveTime};

@@ -3,15 +3,101 @@
 use crate::core::prayer::Prayer;
 
 use chrono::NaiveDate;
-use serde::{Deserialize, Serialize};
+use serde::{
+    de::{MapAccess, SeqAccess, Visitor},
+    Deserialize, Serialize,
+};
 
 use std::{cmp::Ordering, fmt};
 
+#[derive(Deserialize)]
+#[serde(field_identifier, rename_all = "lowercase")]
+enum DayField {
+    Date,
+    Prayers,
+}
+
+struct DayVisitor;
+
+impl<'de> Visitor<'de> for DayVisitor {
+    type Value = Day;
+
+    fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+        formatter.write_str("struct Day")
+    }
+
+    fn visit_seq<V>(self, mut seq: V) -> Result<Day, V::Error>
+    where
+        V: SeqAccess<'de>,
+    {
+        let date = seq
+            .next_element()?
+            .ok_or_else(|| serde::de::Error::invalid_length(0, &self))?;
+        let prayers = seq
+            .next_element()?
+            .ok_or_else(|| serde::de::Error::invalid_length(1, &self))?;
+        Ok(Day::new(date, prayers))
+    }
+
+    fn visit_map<V>(self, mut map: V) -> Result<Day, V::Error>
+    where
+        V: MapAccess<'de>,
+    {
+        let mut date = None;
+        let mut prayers = None;
+        while let Some(key) = map.next_key()? {
+            match key {
+                DayField::Date => {
+                    if date.is_some() {
+                        return Err(serde::de::Error::duplicate_field("date"));
+                    }
+                    date = Some(map.next_value()?);
+                }
+                DayField::Prayers => {
+                    if prayers.is_some() {
+                        return Err(serde::de::Error::duplicate_field("prayers"));
+                    }
+                    prayers = Some(map.next_value()?);
+                }
+            }
+        }
+        let date = date.ok_or_else(|| serde::de::Error::missing_field("date"))?;
+        let mut prayers = prayers.ok_or_else(|| serde::de::Error::missing_field("prayers"))?;
+
+        let _ = Day::new(date, prayers);
+
+        let current_datetime = chrono::Local::now();
+        let current_date = current_datetime.date().naive_local();
+        let current_time = current_datetime.time();
+
+        for prayer in prayers.iter_mut() {
+            match date.cmp(&current_date) {
+                std::cmp::Ordering::Less => prayer.set_performed(true),
+                std::cmp::Ordering::Greater => prayer.set_performed(false),
+                std::cmp::Ordering::Equal => {
+                    prayer.set_performed(current_time >= prayer.get_time())
+                }
+            }
+        }
+
+        Ok(Day::new(date, prayers))
+    }
+}
+
 /// Holds all prayers for a given day
-#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]
+#[derive(Debug, Serialize, Clone, PartialEq, Eq)]
 pub struct Day {
     date: NaiveDate,
     prayers: [Prayer; 5],
+}
+
+impl<'de> Deserialize<'de> for Day {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        deserializer.deserialize_struct("Prayer", &["date", "prayers"], DayVisitor)
+    }
 }
 
 impl fmt::Display for Day {
@@ -57,10 +143,6 @@ impl Ord for Day {
 }
 
 impl Day {
-    pub(crate) fn new(date: NaiveDate, prayers: [Prayer; 5]) -> Self {
-        Self { date, prayers }
-    }
-
     /// Gets the next unperformed prayer
     pub fn get_next_prayer(&self) -> Option<&Prayer> {
         self.prayers.iter().find(|prayer| !prayer.is_performed())
@@ -81,5 +163,9 @@ impl Day {
     /// Gets all prayers for the day
     pub fn get_prayers(&self) -> [Prayer; 5] {
         self.prayers
+    }
+
+    pub(crate) fn new(date: NaiveDate, prayers: [Prayer; 5]) -> Self {
+        Self { date, prayers }
     }
 }

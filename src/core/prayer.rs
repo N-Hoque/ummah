@@ -12,6 +12,7 @@ use std::fmt;
 pub struct Prayer {
     name: PrayerName,
     time: NaiveTime,
+    #[serde(skip_deserializing)]
     performed: bool,
 }
 
@@ -28,22 +29,14 @@ impl fmt::Display for Prayer {
 }
 
 impl Prayer {
-    pub(crate) fn new(name: PrayerName, time: NaiveTime) -> Self {
-        Self {
-            name,
-            time,
-            performed: chrono::Local::now().time() >= time,
-        }
-    }
-
     /// Checks if the prayer has been performed
     pub fn is_performed(&self) -> bool {
         self.performed
     }
 
     /// Set the prayer as performed
-    pub fn set_performed(&mut self) {
-        self.performed = chrono::Local::now().time() >= self.time;
+    pub fn set_performed(&mut self, is_performed: bool) {
+        self.performed = is_performed;
     }
 
     /// Gets the prayer name
@@ -54,5 +47,13 @@ impl Prayer {
     /// Gets the prayer time
     pub fn get_time(&self) -> NaiveTime {
         self.time
+    }
+
+    pub(crate) fn new(name: PrayerName, time: NaiveTime) -> Self {
+        Self {
+            name,
+            time,
+            performed: false,
+        }
     }
 }

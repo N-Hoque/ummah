@@ -25,7 +25,6 @@ use std::path::PathBuf;
 static CURRENT_MONTH: &str = "current_month.yaml";
 static CURRENT_SETTINGS: &str = ".current_settings.yaml";
 
-
 /// Collect all prayer times for the current month
 ///
 /// # Example
@@ -100,15 +99,9 @@ fn check_settings(prayer_settings: &PrayerSettings) -> bool {
 
 fn load_data() -> Option<Month> {
     let path = get_user_filepath().join(CURRENT_MONTH);
-    let data = open_file(path)
+    open_file(path)
         .ok()
-        .and_then(|file| serde_yaml::from_reader::<_, Month>(file).ok());
-    if let Some(mut data) = data {
-        data.reload();
-        Some(data)
-    } else {
-        None
-    }
+        .and_then(|file| serde_yaml::from_reader::<_, Month>(file).ok())
 }
 
 async fn request_times_now(prayer_settings: &PrayerSettings) -> UmmahResult<Month> {
