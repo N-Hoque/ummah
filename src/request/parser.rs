@@ -1,7 +1,7 @@
 use crate::{
-    core::{get_performed_status, prayer::Prayer},
     time::{day::Day, month::Month},
     types::{PrayerName, UmmahError, UmmahResult},
+    {get_performed_status, prayer::Prayer},
 };
 
 use chrono::{Datelike, Duration, Local, NaiveDate, NaiveTime};
@@ -11,19 +11,6 @@ const MAX_DAYS: usize = 32;
 
 static DATE_FMT: &str = "%a %d %b %Y";
 static TIME_FMT: &str = "%k:%M";
-
-pub fn parse_csv_file(data: bytes::Bytes) -> UmmahResult<Month> {
-    let mut csv_reader = csv::Reader::from_reader(data.as_ref());
-    let mut days = Vec::with_capacity(MAX_DAYS);
-    for record in csv_reader.records() {
-        let day = record
-            .and_then(|x| x.deserialize::<'_, CSVPrayer>(None))
-            .map_err(UmmahError::CSV)?
-            .build()?;
-        days.push(day);
-    }
-    Ok(Month::new(days))
-}
 
 #[derive(Debug, Deserialize)]
 pub struct CSVPrayer {
@@ -48,23 +35,54 @@ impl CSVPrayer {
         let maghrib = parse_prayer_time(&self.maghrib, Some(rhs))?;
         let isha = parse_prayer_time(&self.isha, Some(rhs))?;
 
+        let current_date = Local::now().naive_local();
+
         let day = Day::new(
             date,
             [
-                Prayer::new(PrayerName::Fajr, fajr, get_performed_status(date, fajr)),
-                Prayer::new(PrayerName::Dhuhr, dhuhr, get_performed_status(date, dhuhr)),
-                Prayer::new(PrayerName::Asr, asr, get_performed_status(date, asr)),
+                Prayer::new(
+                    PrayerName::Fajr,
+                    fajr,
+                    get_performed_status(current_date, date, fajr),
+                ),
+                Prayer::new(
+                    PrayerName::Dhuhr,
+                    dhuhr,
+                    get_performed_status(current_date, date, dhuhr),
+                ),
+                Prayer::new(
+                    PrayerName::Asr,
+                    asr,
+                    get_performed_status(current_date, date, asr),
+                ),
                 Prayer::new(
                     PrayerName::Maghrib,
                     maghrib,
-                    get_performed_status(date, maghrib),
+                    get_performed_status(current_date, date, maghrib),
                 ),
-                Prayer::new(PrayerName::Isha, isha, get_performed_status(date, isha)),
+                Prayer::new(
+                    PrayerName::Isha,
+                    isha,
+                    get_performed_status(current_date, date, isha),
+                ),
             ],
         );
 
         Ok(day)
     }
+}
+
+pub fn parse_csv_file(data: bytes::Bytes) -> UmmahResult<Month> {
+    let mut csv_reader = csv::Reader::from_reader(data.as_ref());
+    let mut days = Vec::with_capacity(MAX_DAYS);
+    for record in csv_reader.records() {
+        let day = record
+            .and_then(|x| x.deserialize::<'_, CSVPrayer>(None))
+            .map_err(UmmahError::CSV)?
+            .build()?;
+        days.push(day);
+    }
+    Ok(Month::new(days))
 }
 
 fn parse_prayer_date(prayer_date: &str) -> UmmahResult<NaiveDate> {

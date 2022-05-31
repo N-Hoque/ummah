@@ -1,4 +1,4 @@
-use crate::types::{AsrMethod, LatitudeMethod, PrayerMethod};
+use crate::types::{AsrMethod, LatitudeMethod, Organisation};
 
 use clap::Parser;
 use serde::{Deserialize, Serialize};
@@ -15,7 +15,7 @@ pub struct PrayerArguments {
 
     /// Source of Prayer calculation
     #[clap(long, arg_enum, default_value = "mwl")]
-    prayer_method: PrayerMethod,
+    prayer_method: Organisation,
 
     /// Asr time method
     #[clap(long, arg_enum, default_value = "shafi")]
@@ -57,7 +57,7 @@ impl PrayerArguments {
         PrayerSettings::new(
             CalculationMethods {
                 latitude: self.latitude_method,
-                prayer: self.prayer_method,
+                organisation: self.prayer_method,
                 asr: self.asr_method,
             },
             Location {

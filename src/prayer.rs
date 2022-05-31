@@ -16,6 +16,15 @@ pub struct Prayer {
     performed: bool,
 }
 
+impl PartialOrd for Prayer {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        match self.name.partial_cmp(&other.name) {
+            Some(core::cmp::Ordering::Equal) => self.time.partial_cmp(&other.time),
+            ord => ord,
+        }
+    }
+}
+
 impl fmt::Display for Prayer {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self.name {

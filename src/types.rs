@@ -10,7 +10,7 @@ pub type UmmahResult<T> = Result<T, UmmahError>;
 /// Names for all the prayers
 ///
 /// TODO: Add support for Taraweeh and Tahajjud.
-#[derive(Debug, Serialize, Deserialize, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Serialize, Deserialize, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub enum PrayerName {
     Fajr,
     Dhuhr,
@@ -41,7 +41,7 @@ pub enum LatitudeMethod {
 /// The organisation to base the calculations from
 #[allow(clippy::upper_case_acronyms)]
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Clone, Copy, ArgEnum)]
-pub enum PrayerMethod {
+pub enum Organisation {
     /// Muslim World League
     MWL = 1,
     /// University of Islamic Sciences

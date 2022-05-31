@@ -1,6 +1,6 @@
 //! Module for holding a [Day] of [Prayers](super::prayer::Prayer)
 
-use crate::core::{get_performed_status, prayer::Prayer};
+use crate::{get_performed_status, prayer::Prayer};
 
 use chrono::NaiveDate;
 use serde::{
@@ -61,15 +61,21 @@ impl<'de> Visitor<'de> for DayVisitor {
                 }
             }
         }
-        let date = date.ok_or_else(|| serde::de::Error::missing_field("date"))?;
+        let prayer_date = date.ok_or_else(|| serde::de::Error::missing_field("date"))?;
         let mut prayers: [Prayer; 5] =
             prayers.ok_or_else(|| serde::de::Error::missing_field("prayers"))?;
 
+        let current_date = chrono::Local::now().naive_local();
+
         for prayer in prayers.iter_mut() {
-            prayer.set_performed(get_performed_status(date, prayer.get_time()));
+            prayer.set_performed(get_performed_status(
+                current_date,
+                prayer_date,
+                prayer.get_time(),
+            ));
         }
 
-        Ok(Day::new(date, prayers))
+        Ok(Day::new(prayer_date, prayers))
     }
 }
 

@@ -1,4 +1,4 @@
-use crate::types::{AsrMethod, LatitudeMethod, PrayerMethod};
+use crate::types::{AsrMethod, LatitudeMethod, Organisation};
 
 use chrono::Datelike;
 use chrono_utilities::naive::DateTransitions;
@@ -16,20 +16,20 @@ pub struct PrayerSettings {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
-pub(crate) struct CalculationMethods {
-    pub(super) latitude: LatitudeMethod,
-    pub(super) prayer: PrayerMethod,
-    pub(super) asr: AsrMethod,
+pub struct CalculationMethods {
+    pub latitude: LatitudeMethod,
+    pub organisation: Organisation,
+    pub asr: AsrMethod,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-pub(crate) struct Location {
-    pub(super) country: String,
-    pub(super) city: String,
+pub struct Location {
+    pub country: String,
+    pub city: String,
 }
 
 impl PrayerSettings {
-    pub(crate) fn new(methods: CalculationMethods, location: Location) -> Self {
+    pub fn new(methods: CalculationMethods, location: Location) -> Self {
         Self {
             methods,
             location,
@@ -58,7 +58,7 @@ impl PrayerSettings {
             "{}/{}/{}/csv?highlatitudemethod={}&prayercalculationmethod={}&asarcalculationmethod={}&start={}&end={}",
             LINK, self.location.country, self.location.city,
             self.methods.latitude as u8,
-            self.methods.prayer as u8,
+            self.methods.organisation as u8,
             self.methods.asr as u8,
             start_date,
             end_date

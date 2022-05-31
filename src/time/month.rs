@@ -53,4 +53,8 @@ impl Month {
     pub fn select_by_date(&self, date: NaiveDate) -> Option<&Day> {
         self.0.iter().find(|d| d.get_date() == date)
     }
+
+    pub fn select_by_date_mut(&mut self, date: NaiveDate) -> Option<&mut Day> {
+        self.0.iter_mut().find(|d| d.get_date() == date)
+    }
 }
