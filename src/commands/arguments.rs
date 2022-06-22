@@ -49,6 +49,10 @@ pub struct PrayerArguments {
     /// Clear cache
     #[clap(long)]
     clear_cache: bool,
+
+    /// Specific output audio device
+    #[clap(long)]
+    output_device: String,
 }
 
 impl PrayerArguments {
@@ -85,6 +89,10 @@ impl PrayerArguments {
     /// Flag for generating default CSS file for timetable
     pub fn generate_default_css(&self) -> bool {
         self.generate_css
+    }
+
+    pub fn get_output_audio_device(&self) -> String {
+        self.output_device.clone()
     }
 
     pub fn month(&self) -> Option<u32> {
