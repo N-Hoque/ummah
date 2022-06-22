@@ -6,7 +6,6 @@ use serde::Serialize;
 
 use std::{
     fs::File,
-    io::Write,
     path::{Path, PathBuf},
 };
 
@@ -26,18 +25,6 @@ pub fn get_cache_filepath() -> PathBuf {
 
 pub(crate) fn open_file<P: AsRef<Path>>(path: P) -> UmmahResult<File> {
     File::open(path).map_err(UmmahError::IO)
-}
-
-pub(crate) fn write_file<P: AsRef<Path>>(dir: P, file: P, data: &[u8]) -> UmmahResult<()> {
-    create_dir(&dir)?;
-
-    let path = dir.as_ref().join(file);
-
-    println!("Writing file to {:?}", path);
-
-    let mut file = File::create(path).map_err(UmmahError::IO)?;
-
-    file.write(data).map(|_| ()).map_err(UmmahError::IO)
 }
 
 pub(crate) fn write_serialized_file<P: AsRef<Path>, T: Serialize>(

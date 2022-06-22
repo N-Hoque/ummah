@@ -12,7 +12,6 @@ pub mod fs;
 pub mod prayer;
 pub(crate) mod request;
 pub mod time;
-pub mod timetable_generator;
 pub mod types;
 
 pub use crate::{
