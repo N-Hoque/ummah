@@ -9,8 +9,9 @@
 
 pub mod commands;
 pub mod fs;
+pub mod parser;
 pub mod prayer;
-pub(crate) mod request;
+pub(crate) mod request_handler;
 pub mod time;
 pub mod types;
 
@@ -23,11 +24,11 @@ use crate::time::{day::Day, month::Month};
 
 use self::{
     fs::{get_cache_filepath, get_user_filepath, open_file, write_serialized_file},
-    request::handler::download_file,
+    request_handler::download_file,
 };
 
 use commands::settings::PrayerSettings;
-use request::parser::parse_csv_file;
+use parser::CSVPrayer;
 
 use chrono::{Datelike, Local, NaiveDate, NaiveDateTime, NaiveTime};
 
@@ -35,6 +36,10 @@ use std::path::PathBuf;
 
 static CURRENT_MONTH: &str = "current_month.yaml";
 static CURRENT_SETTINGS: &str = ".current_settings.yaml";
+
+pub trait Parse {
+    fn parse(data: bytes::Bytes) -> UmmahResult<Month>;
+}
 
 /// Collect all prayer times for the current month
 ///
@@ -206,7 +211,7 @@ async fn request_times_now(prayer_settings: &PrayerSettings) -> UmmahResult<Mont
     )
     .await?;
 
-    let month = parse_csv_file(timetable)?;
+    let month = CSVPrayer::parse(timetable)?;
 
     cache_data(&month, prayer_settings)?;
 
@@ -220,7 +225,7 @@ async fn request_times(prayer_settings: &PrayerSettings, month: u32) -> UmmahRes
     )
     .await?;
 
-    let month = parse_csv_file(timetable)?;
+    let month = CSVPrayer::parse(timetable)?;
 
     cache_data(&month, prayer_settings)?;
 

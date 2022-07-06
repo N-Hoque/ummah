@@ -1,6 +1,7 @@
 use crate::{
     time::{day::Day, month::Month},
     types::{PrayerName, UmmahError, UmmahResult},
+    Parse,
     {get_performed_status, prayer::Prayer},
 };
 
@@ -72,17 +73,27 @@ impl CSVPrayer {
     }
 }
 
-pub fn parse_csv_file(data: bytes::Bytes) -> UmmahResult<Month> {
-    let mut csv_reader = csv::Reader::from_reader(data.as_ref());
-    let mut days = Vec::with_capacity(MAX_DAYS);
-    for record in csv_reader.records() {
-        let day = record
-            .and_then(|x| x.deserialize::<'_, CSVPrayer>(None))
-            .map_err(UmmahError::CSV)?
-            .build()?;
-        days.push(day);
+impl Parse for CSVPrayer {
+    fn parse(data: bytes::Bytes) -> UmmahResult<Month> {
+        let mut csv_reader = csv::Reader::from_reader(data.as_ref());
+        let mut days = Vec::with_capacity(MAX_DAYS);
+        for record in csv_reader.records() {
+            let day = record
+                .and_then(|x| x.deserialize::<'_, CSVPrayer>(None))
+                .map_err(UmmahError::CSV)?
+                .build()?;
+            days.push(day);
+        }
+        Ok(Month::new(days))
     }
-    Ok(Month::new(days))
+}
+
+pub struct ByteParser;
+
+impl Parse for ByteParser {
+    fn parse(data: bytes::Bytes) -> UmmahResult<Month> {
+        serde_yaml::from_reader(data.as_ref()).map_err(UmmahError::Serde)
+    }
 }
 
 fn parse_prayer_date(prayer_date: &str) -> UmmahResult<NaiveDate> {
