@@ -67,7 +67,7 @@ impl<'de> Visitor<'de> for DayVisitor {
 
         let current_date = chrono::Local::now().naive_local();
 
-        for prayer in prayers.iter_mut() {
+        for prayer in &mut prayers {
             prayer.set_performed(get_performed_status(
                 current_date,
                 prayer_date,
@@ -97,31 +97,31 @@ impl<'de> Deserialize<'de> for Day {
 
 impl fmt::Display for Day {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let mut output = self.date.format("%A, %d %B %Y").to_string();
+        write!(
+            f,
+            "\n{:^62}\n",
+            self.date.format("%A, %d %B %Y").to_string()
+        )?;
 
-        output = format!("\n{:^62}\n", output);
-
-        output += &format!("|{:=<62}|\n|", "");
+        write!(f, "|{:=<62}|\n|", "")?;
 
         for (idx, prayer) in self.prayers.iter().enumerate() {
-            output += &format!("{:^10}", prayer.get_name().to_string());
+            write!(f, "{:^10}", prayer.get_name().to_string())?;
             if idx < 4 {
-                output += " | ";
+                write!(f, " | ")?;
             }
         }
 
-        output += "|\n|";
+        write!(f, "|\n|")?;
 
         for (idx, prayer) in self.prayers.iter().enumerate() {
-            output += &format!("{:^10}", prayer.get_time().to_string());
+            write!(f, "{:^10}", prayer.get_time().to_string())?;
             if idx < 4 {
-                output += " | ";
+                write!(f, " | ")?;
             }
         }
 
-        output += &format!("|\n|{:=<62}|\n", "");
-
-        write!(f, "{output}")
+        write!(f, "|\n|{:=<62}|\n", "")
     }
 }
 
@@ -138,7 +138,13 @@ impl Ord for Day {
 }
 
 impl Day {
+    #[must_use]
+    pub const fn new(date: NaiveDate, prayers: [Prayer; 5]) -> Self {
+        Self { date, prayers }
+    }
+
     /// Gets the next unperformed prayer
+    #[must_use]
     pub fn get_next_prayer(&self) -> Option<&Prayer> {
         self.prayers.iter().find(|prayer| !prayer.is_performed())
     }
@@ -151,16 +157,14 @@ impl Day {
     }
 
     /// Gets the date for the day
-    pub fn get_date(&self) -> NaiveDate {
+    #[must_use]
+    pub const fn get_date(&self) -> NaiveDate {
         self.date
     }
 
     /// Gets all prayers for the day
-    pub fn get_prayers(&self) -> [Prayer; 5] {
+    #[must_use]
+    pub const fn get_prayers(&self) -> [Prayer; 5] {
         self.prayers
-    }
-
-    pub(crate) fn new(date: NaiveDate, prayers: [Prayer; 5]) -> Self {
-        Self { date, prayers }
     }
 }

@@ -79,7 +79,7 @@ impl Parse for CSVPrayer {
         let mut days = Vec::with_capacity(MAX_DAYS);
         for record in csv_reader.records() {
             let day = record
-                .and_then(|x| x.deserialize::<'_, CSVPrayer>(None))
+                .and_then(|x| x.deserialize::<'_, Self>(None))
                 .map_err(UmmahError::CSV)?
                 .build()?;
             days.push(day);

@@ -29,6 +29,7 @@ pub struct Location {
 }
 
 impl PrayerSettings {
+    #[must_use]
     pub fn new(methods: CalculationMethods, location: Location) -> Self {
         Self {
             methods,

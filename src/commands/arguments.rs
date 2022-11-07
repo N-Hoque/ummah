@@ -57,6 +57,7 @@ pub struct PrayerArguments {
 
 impl PrayerArguments {
     /// Get prayer calculation settings
+    #[must_use]
     pub fn settings(&self) -> PrayerSettings {
         PrayerSettings::new(
             CalculationMethods {
@@ -72,30 +73,36 @@ impl PrayerArguments {
     }
 
     /// Clears cache
-    pub fn clear_cache(&self) -> bool {
+    #[must_use]
+    pub const fn clear_cache(&self) -> bool {
         self.clear_cache
     }
 
     /// Flag for selecting only today's prayer times
-    pub fn is_today_only(&self) -> bool {
+    #[must_use]
+    pub const fn is_today_only(&self) -> bool {
         self.today
     }
 
     /// Flag for exporting timetable to HTML file
-    pub fn export_enabled(&self) -> bool {
+    #[must_use]
+    pub const fn export_enabled(&self) -> bool {
         self.export
     }
 
     /// Flag for generating default CSS file for timetable
-    pub fn generate_default_css(&self) -> bool {
+    #[must_use]
+    pub const fn generate_default_css(&self) -> bool {
         self.generate_css
     }
 
+    #[must_use]
     pub fn get_output_audio_device(&self) -> String {
         self.output_device.clone()
     }
 
-    pub fn month(&self) -> Option<u32> {
+    #[must_use]
+    pub const fn month(&self) -> Option<u32> {
         self.month
     }
 }

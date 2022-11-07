@@ -39,7 +39,8 @@ impl fmt::Display for Prayer {
 
 impl Prayer {
     /// Checks if the prayer has been performed
-    pub fn is_performed(&self) -> bool {
+    #[must_use]
+    pub const fn is_performed(&self) -> bool {
         self.performed
     }
 
@@ -49,16 +50,19 @@ impl Prayer {
     }
 
     /// Gets the prayer name
-    pub fn get_name(&self) -> PrayerName {
+    #[must_use]
+    pub const fn get_name(&self) -> PrayerName {
         self.name
     }
 
     /// Gets the prayer time
-    pub fn get_time(&self) -> NaiveTime {
+    #[must_use]
+    pub const fn get_time(&self) -> NaiveTime {
         self.time
     }
 
-    pub(crate) fn new(name: PrayerName, time: NaiveTime, performed: bool) -> Self {
+    #[must_use]
+    pub(crate) const fn new(name: PrayerName, time: NaiveTime, performed: bool) -> Self {
         Self {
             name,
             time,

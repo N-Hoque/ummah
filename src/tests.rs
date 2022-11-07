@@ -20,7 +20,7 @@ mod performed_status {
             get_test_date(),
             prayer_date,
             prayer_time
-        ))
+        ));
     }
 
     #[test]
@@ -32,7 +32,7 @@ mod performed_status {
             get_test_date(),
             prayer_date,
             prayer_time
-        ))
+        ));
     }
 
     #[test]
@@ -44,7 +44,7 @@ mod performed_status {
             get_test_date(),
             prayer_date,
             prayer_time
-        ))
+        ));
     }
 
     #[test]
@@ -56,7 +56,7 @@ mod performed_status {
             get_test_date(),
             prayer_date,
             prayer_time
-        ))
+        ));
     }
 
     #[test]
@@ -68,6 +68,6 @@ mod performed_status {
             get_test_date(),
             prayer_date,
             prayer_time
-        ))
+        ));
     }
 }

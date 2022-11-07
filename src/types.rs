@@ -22,11 +22,11 @@ pub enum PrayerName {
 impl fmt::Display for PrayerName {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            PrayerName::Fajr => write!(f, "Fajr"),
-            PrayerName::Dhuhr => write!(f, "Dhuhr"),
-            PrayerName::Asr => write!(f, "Asr"),
-            PrayerName::Maghrib => write!(f, "Maghrib"),
-            PrayerName::Isha => write!(f, "Isha"),
+            Self::Fajr => write!(f, "Fajr"),
+            Self::Dhuhr => write!(f, "Dhuhr"),
+            Self::Asr => write!(f, "Asr"),
+            Self::Maghrib => write!(f, "Maghrib"),
+            Self::Isha => write!(f, "Isha"),
         }
     }
 }

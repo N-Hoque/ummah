@@ -10,6 +10,7 @@ use super::day::Day;
 pub struct Month(Vec<Day>);
 
 impl Month {
+    #[must_use]
     pub fn new(days: Vec<Day>) -> Self {
         Self(days)
     }
@@ -19,13 +20,14 @@ impl Month {
     }
 
     pub fn update_day(&mut self, day: &Day) {
-        for current_day in self.0.iter_mut() {
+        for current_day in &mut self.0 {
             if day.get_date() == current_day.get_date() {
                 *current_day = day.clone();
             }
         }
     }
 
+    #[must_use]
     pub fn today(&self) -> Option<&Day> {
         self.0
             .iter()
@@ -38,18 +40,21 @@ impl Month {
             .find(|d| d.get_date() == chrono::Local::today().naive_utc())
     }
 
+    #[must_use]
     pub fn tomorrow(&self) -> Option<&Day> {
         self.0.iter().find(|d| {
             d.get_date() == chrono::Local::today().naive_utc() + chrono::Duration::days(1)
         })
     }
 
+    #[must_use]
     pub fn select_by_day_offset(&self, days_offset: i64) -> Option<&Day> {
         self.0.iter().find(|d| {
             d.get_date() == chrono::Local::today().naive_utc() + chrono::Duration::days(days_offset)
         })
     }
 
+    #[must_use]
     pub fn select_by_date(&self, date: NaiveDate) -> Option<&Day> {
         self.0.iter().find(|d| d.get_date() == date)
     }

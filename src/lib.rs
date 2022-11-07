@@ -84,7 +84,7 @@ pub async fn get_prayer_times(
 /// Deletes all cached data
 ///
 /// NB: Cached data is stored in the documents and cache directories.
-/// This directory differs between OSes.
+/// This directory differs between `OSes`.
 ///  
 /// - [Documents](https://docs.rs/dirs-next/2.0.0/dirs_next/fn.document_dir.html)
 /// - [Cache](https://docs.rs/dirs-next/2.0.0/dirs_next/fn.cache_dir.html)
@@ -97,6 +97,7 @@ pub fn clear_cache() -> UmmahResult<()> {
     Ok(())
 }
 
+#[must_use]
 pub fn get_performed_status(
     current_date: NaiveDateTime,
     prayer_date: NaiveDate,
@@ -115,6 +116,7 @@ pub fn get_performed_status(
 /// Generate an array of test prayers.
 ///
 /// NB: These are not valid prayer times. This is for testing only.
+#[must_use]
 pub fn create_test_prayers() -> [Prayer; 5] {
     [
         Prayer::new(
@@ -147,9 +149,10 @@ pub fn create_test_prayers() -> [Prayer; 5] {
 
 /// Creates a test day.
 ///
-/// Uses the [create_test_prayers] function for the prayers of the test day
+/// Uses the [`create_test_prayers`] function for the prayers of the test day
 ///
 /// The test date is always January 1st, 2022
+#[must_use]
 pub fn create_test_day() -> Day {
     Day::new(
         chrono::NaiveDate::from_ymd(2022, 1, 1),
@@ -159,9 +162,10 @@ pub fn create_test_day() -> Day {
 
 /// Creates a test month.
 ///
-/// Takes in `month` value from 1 - 12 and generates each day using [create_test_prayers].
+/// Takes in `month` value from 1 - 12 and generates each day using [`create_test_prayers`].
 ///
 /// The test month starts in the year 2022. This can be overridden with an optional year parameter
+#[must_use]
 pub fn create_test_month(month: u32, year: Option<i32>) -> Month {
     let year = year.unwrap_or(2022);
 
@@ -188,13 +192,12 @@ pub fn create_test_month(month: u32, year: Option<i32>) -> Month {
 
 fn check_settings(prayer_settings: &PrayerSettings) -> bool {
     let path = get_cache_filepath().join(CURRENT_SETTINGS);
-    match open_file(path) {
-        Err(_) => false,
-        Ok(file) => match serde_yaml::from_reader::<_, PrayerSettings>(file) {
-            Err(_) => false,
-            Ok(settings) => settings == prayer_settings.clone().with_audio_downloaded(),
-        },
-    }
+
+    open_file(path).map_or(false, |file| {
+        serde_yaml::from_reader::<_, PrayerSettings>(file).map_or(false, |settings| {
+            settings == prayer_settings.clone().with_audio_downloaded()
+        })
+    })
 }
 
 fn load_data() -> Option<Month> {

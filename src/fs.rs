@@ -11,14 +11,16 @@ use std::{
 
 /// Gets user document directory for core files. Files are stored in "adhan" directory
 ///
-/// The user document differs between OSes.
+/// The user document differs between `OSes`.
+#[must_use]
 pub fn get_user_filepath() -> PathBuf {
     dirs_next::document_dir().map_or_else(|| "adhan".into(), |dir| dir.join("adhan"))
 }
 
 /// Gets cache directory for core files. Files are stored in "adhan" directory
 ///
-/// The cache directory differs between OSes.
+/// The cache directory differs between `OSes`.
+#[must_use]
 pub fn get_cache_filepath() -> PathBuf {
     dirs_next::cache_dir().map_or_else(|| "adhan".into(), |dir| dir.join("adhan"))
 }
